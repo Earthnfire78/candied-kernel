@@ -105,7 +105,7 @@ choice
 	config DEFAULT_VR
 		bool "V/R" if IOSCHED_VR=y
 
-config DEFAULT_NOOP
+	config DEFAULT_SIO
 		bool "SIO" if IOSCHED_SIO=y
 
 
