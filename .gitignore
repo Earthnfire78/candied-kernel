@@ -77,3 +77,6 @@ GTAGS
 *.orig
 *~
 \#*#
+
+*-old.*
+*.save
