@@ -153,14 +153,14 @@ static int tcf_gact_dump(struct sk_buff *skb, struct tc_action *a, int bind, int
 {
 	unsigned char *b = skb_tail_pointer(skb);
 	//struct tc_gact opt;
-	struct tcf_gact *gact = a->priv;
-	struct tcf_t t;
 	struct tc_gact opt = {
 		.index   = gact->tcf_index,
 		.refcnt  = gact->tcf_refcnt - ref,
 		.bindcnt = gact->tcf_bindcnt - bind,
 		.action  = gact->tcf_action,
 	};
+	struct tcf_gact *gact = a->priv;
+	struct tcf_t t;
 
 	//opt.index = gact->tcf_index;
 	//opt.refcnt = gact->tcf_refcnt - ref;
@@ -173,12 +173,12 @@ static int tcf_gact_dump(struct sk_buff *skb, struct tc_action *a, int bind, int
 		//p_opt.paction = gact->tcfg_paction;
 		//p_opt.pval = gact->tcfg_pval;
 		//p_opt.ptype = gact->tcfg_ptype;
-		NLA_PUT(skb, TCA_GACT_PROB, sizeof(p_opt), &p_opt);
 		struct tc_gact_p p_opt = {
 			.paction = gact->tcfg_paction,
 			.pval    = gact->tcfg_pval,
 			.ptype   = gact->tcfg_ptype,
 		};
+		NLA_PUT(skb, TCA_GACT_PROB, sizeof(p_opt), &p_opt);
 	}
 #endif
 	t.install = jiffies_to_clock_t(jiffies - gact->tcf_tm.install);
