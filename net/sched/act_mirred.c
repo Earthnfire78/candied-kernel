@@ -222,7 +222,6 @@ static int tcf_mirred_dump(struct sk_buff *skb, struct tc_action *a, int bind, i
 	unsigned char *b = skb_tail_pointer(skb);
 	struct tcf_mirred *m = a->priv;
 	//struct tc_mirred opt;
-	struct tcf_t t;
 	struct tc_mirred opt = {
 		.index   = m->tcf_index,
 		.action  = m->tcf_action,
@@ -231,6 +230,7 @@ static int tcf_mirred_dump(struct sk_buff *skb, struct tc_action *a, int bind, i
 		.eaction = m->tcfm_eaction,
 		.ifindex = m->tcfm_ifindex,
 	}
+	struct tcf_t t;
 
 	//opt.index = m->tcf_index;
 	//opt.action = m->tcf_action;
