@@ -185,7 +185,7 @@ static int bcmsdh_sdmmc_probe(struct sdio_func *func,
 
 	if (func->num == 2) {
 		sd_trace(("F2 found, calling bcmsdh_probe...\n"));
-		ret = bcmsdh_probe(&func_dev);
+		ret = bcmsdh_probe(&func->dev);
 		//ret = bcmsdh_probe(&sdmmc_dev);
 	}
 
