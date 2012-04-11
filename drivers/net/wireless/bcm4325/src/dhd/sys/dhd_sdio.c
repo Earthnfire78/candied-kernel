@@ -434,7 +434,7 @@ static bool dhdsdio_probe_attach(dhd_bus_t *bus, osl_t *osh, void *sdh,
                                  void * regsva, uint16  devid);
 static bool dhdsdio_probe_malloc(dhd_bus_t *bus, osl_t *osh, void *sdh);
 static bool dhdsdio_probe_init(dhd_bus_t *bus, osl_t *osh, void *sdh);
-static void dhdsdio_release_dongle(dhd_bus_t *bus, osl_t *osh, bool reset_flag););
+static void dhdsdio_release_dongle(dhd_bus_t *bus, osl_t *osh, bool reset_flag);
 
 static uint process_nvram_vars(char *varbuf, uint len);
 
