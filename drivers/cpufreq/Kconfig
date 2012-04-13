@@ -128,7 +128,7 @@ config CPU_FREQ_DEFAULT_GOV_INTERACTIVEX
           you to get a full dynamic cpu frequency capable system by simply
           loading your cpufreq low-level hardware driver, using the
           'interactivex' governor for latency-sensitive workloads.
-	  (Modified version of interactive with sleep+wake code.)
+	  	  (Modified version of interactive with sleep+wake code.)
 
 
 config CPU_FREQ_DEFAULT_GOV_SMARTASS2
@@ -138,11 +138,6 @@ config CPU_FREQ_DEFAULT_GOV_SMARTASS2
 	  Use the CPUFreq governor 'smartassV2' as default.
 
 endchoice
-
-config CPU_FREQ_GOV_INTERACTIVEX
-	tristate "'interactiveX' cpufreq policy governor"
-  	help
-    	  'InteractiveX' - Modified version of interactive with sleep+wake code.
 
 config CPU_FREQ_GOV_SMARTASS2
 	tristate "'smartassV2' cpufreq governor"
@@ -212,6 +207,13 @@ config CPU_FREQ_GOV_INTERACTIVE
 	help
 	  'interactive' - This driver adds a dynamic cpufreq policy governor
 	  designed for latency-sensitive workloads.
+
+config CPU_FREQ_GOV_INTERACTIVEX
+	tristate "'interactiveX' cpufreq policy governor"
+  	help
+	  'InteractiveX' - This driver adds a dynamic cpufreq policy governor
+	  designed for latency-sensitive workloads.
+	  (Modified version of interactive with sleep+wake code.)
 
 config CPU_FREQ_GOV_CONSERVATIVE
 	tristate "'conservative' cpufreq governor"
