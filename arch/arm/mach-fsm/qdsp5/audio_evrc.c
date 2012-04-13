@@ -947,6 +947,7 @@ static long audevrc_ioctl(struct file *file, unsigned int cmd,
 		break;
 	default:
 		rc = -EINVAL;
+		break;
 	}
 	mutex_unlock(&audio->lock);
 	return rc;

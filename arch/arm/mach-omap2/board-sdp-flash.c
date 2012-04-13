@@ -92,7 +92,7 @@ __init board_nor_init(struct flash_partitions sdp_nor_parts, u8 cs)
 	}
 	if (err < 0) {
 		printk(KERN_ERR "NOR: Can't request GPMC CS\n");
-		return;
+		break;
 	}
 	if (platform_device_register(&sdp_nor_device) < 0)
 		printk(KERN_ERR	"Unable to register NOR device\n");

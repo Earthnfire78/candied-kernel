@@ -140,6 +140,7 @@ static long q6_amrnb_in_ioctl(struct file *file, unsigned int cmd,
 
 	default:
 		rc = -EINVAL;
+		break;
 	}
 
 	mutex_unlock(&amrnb->lock);

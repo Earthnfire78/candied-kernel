@@ -678,6 +678,7 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 
 	default:
 		rc = -EINVAL;
+		break;
 	}
 	mutex_unlock(&session_lock);
 	return rc;

@@ -158,6 +158,7 @@ static long q6_aac_in_ioctl(struct file *file,
 		break;
 	default:
 		rc = -EINVAL;
+		break;
 	}
 
 	mutex_unlock(&aac->lock);

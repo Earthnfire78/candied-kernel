@@ -1076,6 +1076,7 @@ static int msm_adsp_disable_locked(struct msm_adsp_module *module)
 			MM_DBG("disable interrupt\n");
 		}
 		mutex_unlock(&adsp_open_lock);
+		break;
 	}
 	return rc;
 }

@@ -213,6 +213,7 @@ static long aac_in_ioctl(struct file *file,
 	}
 	default:
 		rc = -EINVAL;
+		break;
 	}
 	return rc;
 }

@@ -128,6 +128,7 @@ static int verify_vfe_command(struct msm_adsp_module *module,
 					module->name, cmd_id);
 			return -1;
 		}
+		break;
 	}
 	return 0;
 }
@@ -179,9 +180,11 @@ static int verify_vfe_command_table(struct msm_adsp_module *module,
 		for (i = 0; i < 8; i++) {
 			void **addr = (void **)
 				&cmd->ip_buf_addr[i];
+			break;
 			if (*addr && adsp_pmem_fixup(module, addr, size))
 				return -1;
 		}
+		break;
 	}
 	case VFE_CMD_AXI_OP_CFG:
 	{
@@ -214,6 +217,7 @@ static int verify_vfe_command_table(struct msm_adsp_module *module,
 			    (*addr2_cbcr && adsp_pmem_fixup(module, addr2_cbcr, size2_cbcr)))
 				return -1;
 		}
+		break;
 	}
 	default:
 		if (cmd_id > 4) {
@@ -221,6 +225,7 @@ static int verify_vfe_command_table(struct msm_adsp_module *module,
 				id %d\n", module->name, cmd_id);
 			return -1;
 		}
+		break;
 	}
 	return 0;
 }

@@ -113,6 +113,7 @@ static int verify_jpeg_cfg_cmd(struct msm_adsp_module *module,
 					module->name, cmd_id);
 			return -1;
 		}
+		break;
 	}
 	return 0;
 }
@@ -181,6 +182,7 @@ static int verify_jpeg_action_cmd(struct msm_adsp_module *module,
 				module->name, cmd_id);
 			return -1;
 		}
+		break;
 	}
 	return 0;
 }

@@ -273,6 +273,7 @@ fc_fail:
 		break;
 	default:
 		rc = -EINVAL;
+		break;
 	}
 
 	mutex_unlock(&aac->lock);

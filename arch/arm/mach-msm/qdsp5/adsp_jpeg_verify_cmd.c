@@ -111,8 +111,10 @@ static int verify_jpeg_cfg_cmd(struct msm_adsp_module *module,
 		if (cmd_id > 1) {
 			MM_ERR("module %s: invalid JPEG CFG cmd_id %d\n",
 					module->name, cmd_id);
+			break;
 			return -1;
 		}
+		break;
 	}
 	return 0;
 }
@@ -181,6 +183,7 @@ static int verify_jpeg_action_cmd(struct msm_adsp_module *module,
 				module->name, cmd_id);
 			return -1;
 		}
+		break;
 	}
 	return 0;
 }
