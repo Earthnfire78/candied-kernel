@@ -1,5 +1,5 @@
 /*
- *  drivers/cpufreq/cpufreq_conservative.c
+ *  drivers/cpufreq/cpufreq_lionheart.c
  *
  *  Copyright (C)  2001 Russell King
  *            (C)  2003 Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>.
@@ -81,7 +81,7 @@ static unsigned int dbs_enable;	/* number of CPUs using this policy */
  */
 static DEFINE_MUTEX(dbs_mutex);
 
-static struct workqueue_struct	*kconservative_wq;
+static struct workqueue_struct	*klionheart_wq;
 
 static struct dbs_tuners {
 	unsigned int sampling_rate;
@@ -167,7 +167,7 @@ static struct notifier_block dbs_cpufreq_notifier_block = {
 static ssize_t show_sampling_rate_max(struct kobject *kobj,
 				      struct attribute *attr, char *buf)
 {
-	printk_once(KERN_INFO "CPUFREQ: conservative sampling_rate_max "
+	printk_once(KERN_INFO "CPUFREQ: lionheart sampling_rate_max "
 		    "sysfs file is deprecated - used by: %s\n", current->comm);
 	return sprintf(buf, "%u\n", -1U);
 }
@@ -181,7 +181,7 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
 define_one_global_ro(sampling_rate_max);
 define_one_global_ro(sampling_rate_min);
 
-/* cpufreq_conservative Governor Tunables */
+/* cpufreq_lionheart Governor Tunables */
 #define show_one(file_name, object)					\
 static ssize_t show_##file_name						\
 (struct kobject *kobj, struct attribute *attr, char *buf)		\
@@ -197,14 +197,14 @@ show_one(freq_step, freq_step);
 
 /*** delete after deprecation time ***/
 #define DEPRECATION_MSG(file_name)					\
-	printk_once(KERN_INFO "CPUFREQ: Per core conservative sysfs "	\
+	printk_once(KERN_INFO "CPUFREQ: Per core lionheart sysfs "	\
 		"interface is deprecated - " #file_name "\n");
 
 #define show_one_old(file_name)						\
 static ssize_t show_##file_name##_old					\
 (struct cpufreq_policy *unused, char *buf)				\
 {									\
-	printk_once(KERN_INFO "CPUFREQ: Per core conservative sysfs "	\
+	printk_once(KERN_INFO "CPUFREQ: Per core lionheart sysfs "	\
 		"interface is deprecated - " #file_name "\n");		\
 	return show_##file_name(NULL, NULL, buf);			\
 }
@@ -377,7 +377,7 @@ static struct attribute *dbs_attributes[] = {
 
 static struct attribute_group dbs_attr_group = {
 	.attrs = dbs_attributes,
-	.name = "conservative",
+	.name = "lionheart",
 };
 
 /*** delete after deprecation time ***/
@@ -386,7 +386,7 @@ static struct attribute_group dbs_attr_group = {
 static ssize_t store_##file_name##_old					\
 (struct cpufreq_policy *unused, const char *buf, size_t count)		\
 {									\
-	printk_once(KERN_INFO "CPUFREQ: Per core conservative sysfs "	\
+	printk_once(KERN_INFO "CPUFREQ: Per core lionheart sysfs "	\
 		"interface is deprecated - " #file_name "\n");	\
 	return store_##file_name(NULL, NULL, buf, count);		\
 }
@@ -418,7 +418,7 @@ static struct attribute *dbs_attributes_old[] = {
 
 static struct attribute_group dbs_attr_group_old = {
 	.attrs = dbs_attributes_old,
-	.name = "conservative",
+	.name = "lionheart",
 };
 
 /*** delete after deprecation time ***/
@@ -560,7 +560,7 @@ static void do_dbs_timer(struct work_struct *work)
 
 	dbs_check_cpu(dbs_info);
 
-	queue_delayed_work_on(cpu, kconservative_wq, &dbs_info->work, delay);
+	queue_delayed_work_on(cpu, klionheart_wq, &dbs_info->work, delay);
 	mutex_unlock(&dbs_info->timer_mutex);
 }
 
@@ -572,7 +572,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 
 	dbs_info->enable = 1;
 	INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
-	queue_delayed_work_on(dbs_info->cpu, kconservative_wq, &dbs_info->work,
+	queue_delayed_work_on(dbs_info->cpu, klionheart_wq, &dbs_info->work,
 				delay);
 }
 
@@ -641,7 +641,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			}
 
 			/*
-			 * conservative does not implement micro like ondemand
+			 * lionheart does not implement micro like ondemand
 			 * governor, thus we are bound to jiffes/HZ
 			 */
 			min_sampling_rate = 10000;
@@ -704,11 +704,11 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 	return 0;
 }
 
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART
 static
 #endif
-struct cpufreq_governor cpufreq_gov_conservative = {
-	.name			= "conservative",
+struct cpufreq_governor cpufreq_gov_lionheart = {
+	.name			= "lionheart",
 	.governor		= cpufreq_governor_dbs,
 	.max_transition_latency	= TRANSITION_LATENCY_LIMIT,
 	.owner			= THIS_MODULE,
@@ -718,33 +718,33 @@ static int __init cpufreq_gov_dbs_init(void)
 {
 	int err;
 
-	kconservative_wq = create_workqueue("kconservative");
-	if (!kconservative_wq) {
-		printk(KERN_ERR "Creation of kconservative failed\n");
+	klionheart_wq = create_workqueue("klionheart");
+	if (!klionheart_wq) {
+		printk(KERN_ERR "Creation of klionheart failed\n");
 		return -EFAULT;
 	}
 
-	err = cpufreq_register_governor(&cpufreq_gov_conservative);
+	err = cpufreq_register_governor(&cpufreq_gov_lionheart);
 	if (err)
-		destroy_workqueue(kconservative_wq);
+		destroy_workqueue(klionheart_wq);
 
 	return err;
 }
 
 static void __exit cpufreq_gov_dbs_exit(void)
 {
-	cpufreq_unregister_governor(&cpufreq_gov_conservative);
-	destroy_workqueue(kconservative_wq);
+	cpufreq_unregister_governor(&cpufreq_gov_lionheart);
+	destroy_workqueue(klionheart_wq);
 }
 
 
 MODULE_AUTHOR("Alexander Clouter <alex@digriz.org.uk>");
-MODULE_DESCRIPTION("'cpufreq_conservative' - A dynamic cpufreq governor for "
+MODULE_DESCRIPTION("'cpufreq_lionheart' - A dynamic cpufreq governor for "
 		"Low Latency Frequency Transition capable processors "
 		"optimised for use in a battery environment");
 MODULE_LICENSE("GPL");
 
-#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART
 fs_initcall(cpufreq_gov_dbs_init);
 #else
 module_init(cpufreq_gov_dbs_init);
