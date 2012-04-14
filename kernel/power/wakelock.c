@@ -52,7 +52,7 @@ struct workqueue_struct *suspend_work_queue;
 struct wake_lock main_wake_lock;
 suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
 static struct wake_lock unknown_wakeup;
-+static struct wake_lock suspend_backoff_lock;
+static struct wake_lock suspend_backoff_lock;
 
 #define SUSPEND_BACKOFF_FAILURES  10
 #define SUSPEND_BACKOFF_INTERVAL  5000
@@ -314,8 +314,8 @@ static void suspend_sys_sync_handler(unsigned long arg)
     suspend_sys_sync_abort = true;
     complete(&suspend_sys_sync_comp);
   } else {
-    mod_timer(&suspend_sys_sync_timer, jiffies 
-        SUSPEND_SYS_SYNC_TIMEOUT);
+    mod_timer(&suspend_sys_sync_timer, jiffies +
+          SUSPEND_SYS_SYNC_TIMEOUT);
   }
 }
 
@@ -324,7 +324,7 @@ int suspend_sys_sync_wait(void)
   suspend_sys_sync_abort = false;
 
   if (suspend_sys_sync_count != 0) {
-    mod_timer(&suspend_sys_sync_timer, jiffies 
+    mod_timer(&suspend_sys_sync_timer, jiffies +
         SUSPEND_SYS_SYNC_TIMEOUT);
     wait_for_completion(&suspend_sys_sync_comp);
   }
