@@ -113,7 +113,7 @@ config CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
 
 config CPU_FREQ_DEFAULT_GOV_LIONHEART
         bool "conservative"
-        select CPU_FREQ_GOV_CONSERVATIVE
+        select CPU_FREQ_GOV_LIONHEART
         select CPU_FREQ_GOV_PERFORMANCE
         help
           Modified version of governor 'conservative'.
