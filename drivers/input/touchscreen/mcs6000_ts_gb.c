@@ -442,13 +442,13 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 				
 				if(abs(x1-x2) > 35)
 					flipdy=1;
-				mcs6000_multi_ts_event_touch(x1, y1, z1, x2, y2, z2, PRESSED, dev);
+				mcs6000_multi_ts_event_touch(x1, y1, x2, y2, PRESSED, ts);
 				pre_x1 = x1;
 				pre_y1 = y1;
-				pre_z1 = z1;
+				//pre_z1 = z1;
 				pre_x2 = x2;
 				pre_y2 = y2;
-				pre_z2 = z2;
+				//pre_z2 = z2;
 			}
 			else if (input_type == SINGLE_POINT_TOUCH) {
 				mcs6000_multi_ts_event_touch(x1, y1, -1, -1, PRESSED, ts);
@@ -469,6 +469,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			key_pressed = 0;
 		}
 	*/
+	
 		if (touch_pressed) {
 #ifdef LG_FW_MULTI_TOUCH
 			if (s_input_type == MULTI_POINT_TOUCH) {
