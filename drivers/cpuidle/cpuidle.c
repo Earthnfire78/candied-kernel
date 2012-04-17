@@ -21,6 +21,7 @@
 
 #include "cpuidle.h"
 
+
 DEFINE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
 
 DEFINE_MUTEX(cpuidle_lock);
