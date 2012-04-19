@@ -44,7 +44,7 @@ DEFINE_EVENT(power, power_start,
 
 DEFINE_EVENT(power, power_frequency,
 
-	TP_PROTO(unsigned int type, unsigned int state),
+	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
 
 	TP_ARGS(type, state)
 );
@@ -65,6 +65,14 @@ TRACE_EVENT(power_end,
 
 	TP_printk("dummy=%lu", (unsigned long)__entry->dummy)
 
+);
+
+
+DEFINE_EVENT(cpu, cpu_frequency,
+
+        TP_PROTO(unsigned int frequency, unsigned int cpu_id),
+
+        TP_ARGS(frequency, cpu_id)
 );
 
 #endif /* _TRACE_POWER_H */
