@@ -1,5 +1,5 @@
 /*
- *  drivers/cpufreq/cpufreq_conservative.c
+ *  drivers/cpufreq/cpufreq_lionheart.c
  *
  *  Copyright (C)  2001 Russell King
  *            (C)  2003 Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>.
@@ -169,7 +169,7 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
 
 define_one_global_ro(sampling_rate_min);
 
-/* cpufreq_conservative Governor Tunables */
+/* cpufreq_lionheart Governor Tunables */
 #define show_one(file_name, object)					\
 static ssize_t show_##file_name						\
 (struct kobject *kobj, struct attribute *attr, char *buf)		\
@@ -314,7 +314,7 @@ static struct attribute *dbs_attributes[] = {
 
 static struct attribute_group dbs_attr_group = {
 	.attrs = dbs_attributes,
-	.name = "conservative",
+	.name = "lionheart",
 };
 
 /************************** sysfs end ************************/
@@ -528,7 +528,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			}
 
 			/*
-			 * conservative does not implement micro like ondemand
+			 * lionheart does not implement micro like ondemand
 			 * governor, thus we are bound to jiffes/HZ
 			 */
 			// min_sampling_rate =
@@ -590,11 +590,11 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 	return 0;
 }
 
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART
 static
 #endif
-struct cpufreq_governor cpufreq_gov_conservative = {
-	.name			= "conservative",
+struct cpufreq_governor cpufreq_gov_lionheart = {
+	.name			= "lionheart",
 	.governor		= cpufreq_governor_dbs,
 	.max_transition_latency	= TRANSITION_LATENCY_LIMIT,
 	.owner			= THIS_MODULE,
@@ -602,22 +602,22 @@ struct cpufreq_governor cpufreq_gov_conservative = {
 
 static int __init cpufreq_gov_dbs_init(void)
 {
-	return cpufreq_register_governor(&cpufreq_gov_conservative);
+	return cpufreq_register_governor(&cpufreq_gov_lionheart);
 }
 
 static void __exit cpufreq_gov_dbs_exit(void)
 {
-	cpufreq_unregister_governor(&cpufreq_gov_conservative);
+	cpufreq_unregister_governor(&cpufreq_gov_lionheart);
 }
 
 
 MODULE_AUTHOR("Alexander Clouter <alex@digriz.org.uk>");
-MODULE_DESCRIPTION("'cpufreq_conservative' - A dynamic cpufreq governor for "
+MODULE_DESCRIPTION("'cpufreq_lionheart' - A dynamic cpufreq governor for "
 		"Low Latency Frequency Transition capable processors "
 		"optimised for use in a battery environment");
 MODULE_LICENSE("GPL");
 
-// #ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
+// #ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART
 fs_initcall(cpufreq_gov_dbs_init);
 // #else
 // module_init(cpufreq_gov_dbs_init);

@@ -243,7 +243,9 @@ config CPU_FREQ_GOV_LIONHEART
     depends on CPU_FREQ
     help
       'lionheart' - modified version of 'conservative' governor
-
+	  A dynamic cpufreq governor for Low Latency Frequency Transition
+	  capable processors optimised for use in a battery environment
+	  
 	  If in doubt, say N.
 	  
 config CPU_FREQ_GOV_SMARTASS2
