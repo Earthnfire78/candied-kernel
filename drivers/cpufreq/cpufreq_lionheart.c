@@ -617,10 +617,9 @@ MODULE_DESCRIPTION("'cpufreq_lionheart' - A dynamic cpufreq governor for "
 		"optimised for use in a battery environment");
 MODULE_LICENSE("GPL");
 
-// #ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART
 fs_initcall(cpufreq_gov_dbs_init);
-// #else
-// module_init(cpufreq_gov_dbs_init);
-// #endif
+#else
+module_init(cpufreq_gov_dbs_init);
+#endif
 module_exit(cpufreq_gov_dbs_exit);
-
