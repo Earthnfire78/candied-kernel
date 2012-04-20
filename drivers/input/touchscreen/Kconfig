@@ -716,4 +716,16 @@ config TOUCHSCREEN_MCS6000
 	  To compile this driver as a module, choose M here: the
 	  module will be called tsc2007.
 
+config TOUCHSCREEN_MCS6000_CAVEMAN
+        default n  
+        tristate "MCS6000 touchscreens from Der Caveman"
+        depends on I2C
+        help
+          Say Y here if you have a MCS6000 touchscreen.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the
+          module will be called tsc2007.
+
 endif
