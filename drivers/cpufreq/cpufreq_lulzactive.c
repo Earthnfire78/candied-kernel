@@ -66,7 +66,7 @@ static cpumask_t down_cpumask;
 static spinlock_t down_cpumask_lock;
 
 
-#define DEFAULT_DESIRED_FREQ 500000
+#define DEFAULT_DESIRED_FREQ 480000
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp up.
