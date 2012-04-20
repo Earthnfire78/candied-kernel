@@ -735,7 +735,7 @@ static int mddi_hitachi_lcd_init(void)
 			pinfo->lcd.vsync_enable = TRUE;
 		#else
 			pinfo->lcd.vsync_enable = FALSE;
-		#endi	
+		#endif
 		pinfo->lcd.refx100 = (mddi_hitachi_rows_per_second * 100) /
                         		mddi_hitachi_rows_per_refresh;
 
