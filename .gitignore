@@ -80,3 +80,4 @@ GTAGS
 *-old.*
 *.save
 
+arch/arm/boot/compressed/.
