@@ -70,7 +70,7 @@ static void mddi_hitachi_lcd_panel_poweron(void);
 static void mddi_hitachi_lcd_panel_poweroff(void);
 static void mddi_hitachi_lcd_panel_store_poweron(void);
 
-#define DEBUG 1
+//#define DEBUG 1
 #if DEBUG
 #define EPRINTK(fmt, args...) printk(fmt, ##args)
 #else
@@ -422,102 +422,6 @@ static void mddi_hitachi_vsync_set_handler(msm_fb_vsync_handler_type handler,	/*
 		mddi_hitachi_vsync_attempts = 1;
 		mddi_vsync_detect_enabled = TRUE;
 	}
-}
-
-/* FIXME: following function has no meaning any more
- * should be eliminated
- * 2010-11-16, cleaneye.kim@lge.com
- */
-static void mddi_hitachi_lcd_vsync_detected(boolean detected)
-{
-#if 0
-	/* static timetick_type start_time = 0; */
-	static struct timeval start_time;
-	static boolean first_time = TRUE;
-	/* unit32 mdp_cnt_val = 0; */
-	/* timetick_type elapsed_us; */
-	struct timeval now;
-	uint32 elapsed_us;
-	uint32 num_vsyncs;
-#endif
-
-/* LGE_CHANGE
-  * Close below code to fix screen shaking problem
-  * 2010-04-22, minjong.gong@lge.com
-  */
-//	mddi_queue_register_write_int(0x2C, 0);
-
-#if 0 /* Block temporaly till vsync implement */
-	if ((detected) || (mddi_hitachi_vsync_attempts > 5)) {
-		if ((detected) || (mddi_hitachi_monitor_refresh_value)) {
-			/* if (start_time != 0) */
-			if (!first_time) {
-				jiffies_to_timeval(jiffies, &now);
-				elapsed_us =
-					(now.tv_sec - start_time.tv_sec) * 1000000 +
-					now.tv_usec - start_time.tv_usec;
-				/*
-				 * LCD is configured for a refresh every usecs,
-				 *  so to determine the number of vsyncs that
-				 *  have occurred since the last measurement
-				 *  add half that to the time difference and
-				 *  divide by the refresh rate.
-				 */
-				num_vsyncs = (elapsed_us +
-						(mddi_hitachi_rows_per_refresh >>
-						 1))/
-					mddi_hitachi_rows_per_refresh;
-				/*
-				 * LCD is configured for * hsyncs (rows) per
-				 * refresh cycle. Calculate new rows_per_second
-				 * value based upon these new measuerments.
-				 * MDP can update with this new value.
-				 */
-				mddi_hitachi_rows_per_second =
-					(mddi_hitachi_rows_per_refresh * 1000 *
-					 num_vsyncs) / (elapsed_us / 1000);
-			}
-			/* start_time = timetick_get();*/
-			first_time = FALSE;
-			jiffies_to_timeval(jiffies, &start_time);
-			if (mddi_hitachi_report_refresh_measurements) {
-				(void)mddi_queue_register_read_int(VPOS,
-									&mddi_hitachi_curr_vpos);
-				/* mdp_cnt_val = MDP_LINE_COUNT; */
-			}
-		}
-		/* if detected = TRUE, client initiated wakeup was detected */
-		if (mddi_hitachi_vsync_handler != NULL) {
-			(*mddi_hitachi_vsync_handler)
-				(mddi_hitachi_vsync_handler_arg);
-			mddi_hitachi_vsync_handler = NULL;
-		}
-		mddi_vsync_detect_enabled = FALSE;
-		mddi_hitachi_vsync_attempts = 0;
-		/* need to disable the interrupt wakeup */
-		if (!mddi_queue_register_write_int(INTMSK, 0x0001))
-			printk("Vsync interrupt disable failed!\n");
-		if (!detected) {
-			/* give up after 5 failed attempts but show error */
-			printk("Vsync detection failed!\n");
-		} else if ((mddi_hitachi_monitor_refresh_value) &&
-				(mddi_hitachi_report_refresh_measurements)) {
-			printk("  Last Line Counter=%d!\n",
-					mddi_hitachi_curr_vpos);
-			/* MDDI_MSG_NOTICE("  MDP Line Counter=%d!\n",mdp_cnt_val); */
-			printk("  Lines Per Second=%d!\n",
-					mddi_hitachi_rows_per_second);
-		}
-		/* clear the interrupt */
-		if (!mddi_queue_register_write_int(INTFLG, 0x0001))
-			printk("Vsync interrupt clear failed!\n");
-	} else {
-		/* if detected = FALSE, we woke up from hibernation, but did not
-		 * detect client initiated wakeup.
-		 */
-		mddi_hitachi_vsync_attempts++;
-	}
-#endif
 }
 
 static void hitachi_workaround(void)
