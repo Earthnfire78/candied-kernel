@@ -619,3 +619,4 @@ module_init(genlock_dev_init);
 module_exit(genlock_dev_close);
 
 #endif
+
