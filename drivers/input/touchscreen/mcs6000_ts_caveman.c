@@ -234,7 +234,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	    {
 	      printk(KERN_ERR "%s touch ic read error\n", __FUNCTION__);
 	      //retry at next sample
-	      queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+	      //queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+	      queue_work(mcs6000_wq, &ts->work);
 	    }
 
 
@@ -264,7 +265,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	              input_sync(ts->input_dev);
 	            }
 	        }
-	      queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+	      //queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+	      queue_work(mcs6000_wq, &ts->work);
 	    }
 	  else   /* touch released case */
 	    {
