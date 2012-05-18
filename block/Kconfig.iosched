@@ -2,15 +2,15 @@ if BLOCK
 
 menu "IO Schedulers"
 
-#config IOSCHED_NOOP
-#	bool
-#	default y
-#	---help---
-#	  The no-op I/O scheduler is a minimal scheduler that does basic merging
-#	  and sorting. Its main uses include non-disk based block devices like
-#	  memory devices, and specialised software or hardware environments
-#	  that do their own scheduling and require only minimal assistance from
-#	  the kernel.
+config IOSCHED_NOOP
+	bool
+	default y
+	---help---
+	  The no-op I/O scheduler is a minimal scheduler that does basic merging
+	  and sorting. Its main uses include non-disk based block devices like
+	  memory devices, and specialised software or hardware environments
+	  that do their own scheduling and require only minimal assistance from
+	  the kernel.
 
 config IOSCHED_DEADLINE
 	tristate "Deadline I/O scheduler"
@@ -99,8 +99,8 @@ choice
         config DEFAULT_BFQ
                 bool "BFQ" if IOSCHED_BFQ=y
 
-#	config DEFAULT_NOOP
-#		bool "No-op"
+	config DEFAULT_NOOP
+		bool "No-op"
 
 #	config DEFAULT_VR
 #		bool "V/R" if IOSCHED_VR=y
@@ -115,8 +115,8 @@ config DEFAULT_IOSCHED
 	string
 	default "deadline" if DEFAULT_DEADLINE
 	default "cfq" if DEFAULT_CFQ
-    default "bfq" if DEFAULT_BFQ
-#	default "noop" if DEFAULT_NOOP
+	default "bfq" if DEFAULT_BFQ
+	default "noop" if DEFAULT_NOOP
 #	default "vr" if DEFAULT_VR
 	default "sio" if DEFAULT_SIO
 
