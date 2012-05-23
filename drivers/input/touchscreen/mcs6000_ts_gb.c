@@ -89,7 +89,7 @@ enum {
 	MCS6000_DM_TRACE_REAL = 1U << 3, 
 };
 
-static unsigned int mcs6000_debug_mask = MCS6000_DM_TRACE_REAL;
+static unsigned int mcs6000_debug_mask = MCS6000_DM_TRACE_NO;
 
 module_param_named(debug_mask, mcs6000_debug_mask, int,
 		S_IRUGO | S_IWUSR | S_IWGRP);
@@ -201,7 +201,7 @@ static __inline void mcs6000_key_event_touch(int touch_reg,  int value,  struct 
 {
 	unsigned int keycode;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (touch_reg == KEY1_TOUCHED) {
@@ -225,7 +225,7 @@ static __inline void mcs6000_key_event_touch(int touch_reg,  int value,  struct 
 	input_report_key(ts->input_dev, keycode, value);
 	input_sync(ts->input_dev);
 
-	//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 		DMSG("Touch keycode(%d),value(%d)\n", keycode, value);
 
 	return;
@@ -237,7 +237,7 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 {
 	int report = 0;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if ((x1 >= 0) && (y1 >= 0)) {
@@ -259,7 +259,7 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 	if (report != 0)
 		input_sync(ts->input_dev);
 	else {
-		//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+		if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 			DMSG("Not available touch data x1=%d, y1=%d, x2=%d, y2=%d\n", x1, y1, x2, y2);
 	}
 	return;
@@ -272,7 +272,7 @@ static __inline void mcs6000_single_ts_event_touch(unsigned int x, unsigned int 
 {
 	int report = 0;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if ((x >= 0) && (y >= 0)) {
@@ -286,7 +286,7 @@ static __inline void mcs6000_single_ts_event_touch(unsigned int x, unsigned int 
 		input_sync(ts->input_dev);
 	} 
 	else {
-		//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+		if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 			DMSG("Not available touch data x=%d, y=%d\n", x, y);
 	}
 
@@ -295,7 +295,7 @@ static __inline void mcs6000_single_ts_event_touch(unsigned int x, unsigned int 
 
 static __inline void mcs6000_single_ts_event_release(struct mcs6000_ts_data *ts)
 {
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	input_report_key(ts->input_dev, BTN_TOUCH, 0);
@@ -332,7 +332,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	struct mcs6000_ts_data *ts = container_of(work, struct mcs6000_ts_data, work);
 	//struct mcs6000_ts_data *ts = container_of(to_delayed_work(work), struct mcs6000_ts_data, work);
 	
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 	
 
@@ -385,7 +385,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	}
 #endif
 
-	//if (MCS6000_DM_TRACE_REAL & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_REAL & mcs6000_debug_mask)
 	{
 		printk(KERN_INFO "T:%d X1:%d Y1:%d X2:%d Y2:%d\n", input_type, x1,y1,x2,y2);
 
@@ -465,7 +465,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 		if (touch_pressed) {
 #ifdef LG_FW_MULTI_TOUCH
 			if (s_input_type == MULTI_POINT_TOUCH) {
-				//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+				if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 					DMSG("multi touch release...(%d, %d), (%d, %d)\n", pre_x1,pre_y1,pre_x2,pre_y2);
 
 				mcs6000_multi_ts_event_touch(pre_x1, pre_y1, pre_x2, pre_y2, RELEASED, ts);
@@ -473,13 +473,13 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 				pre_x1 = -1; pre_y1 = -1; pre_x2 = -1; pre_y2 = -1;
 			} 
 			else {
-				//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+				if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 					DMSG("single touch release... %d, %d\n", x1, y1);
 
 				mcs6000_multi_ts_event_touch(x1, y1, -1, -1, RELEASED, ts);
 			}
 #else
-			//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+			if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 				DMSG("single release... %d, %d\n", x1, y1);
 
 			mcs6000_single_ts_event_touch (x1, y1, RELEASED, ts);
@@ -490,8 +490,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 
 touch_retry:
 	if (ts->pendown)
-		queue_work(mcs6000_wq, &ts->work);
-		//queue_delayed_work(mcs6000_wq, &ts->work,msecs_to_jiffies(TS_POLLING_TIME));
+		//queue_work(mcs6000_wq, &ts->work);
+		queue_delayed_work(mcs6000_wq, &ts->work,msecs_to_jiffies(TS_POLLING_TIME));
 	else {
 		enable_irq(ts->num_irq);
 		ts->irq_sync++;
@@ -505,8 +505,8 @@ static irqreturn_t mcs6000_ts_irq_handler(int irq, void *dev_id)
 	if (gpio_get_value(ts->intr_gpio) == 0) {
 		disable_irq_nosync(ts->client->irq);
 		ts->irq_sync--;
-		queue_work(mcs6000_wq, &ts->work);
-		//queue_delayed_work(mcs6000_wq, &ts->work,msecs_to_jiffies(TS_POLLING_TIME));
+		//queue_work(mcs6000_wq, &ts->work);
+		queue_delayed_work(mcs6000_wq, &ts->work,msecs_to_jiffies(TS_POLLING_TIME));
 	}
 	else  {
 		printk(KERN_INFO "mcs6000_ts_irq_handler: check int gpio level\n");
@@ -520,7 +520,7 @@ static void mcs6000_firmware_info(unsigned char* fw_ver, unsigned char* hw_ver)
 	char ret = 0;	
 	struct vreg *vreg_touch = vreg_get(0, "synt");
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (mcs6000_ext_ts == (void *)NULL) {
@@ -653,7 +653,7 @@ static __inline int mcs6000_ioctl_down_i2c_write(struct file *file, unsigned cha
 	int err = 0;
 	struct i2c_msg msg;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (ts == (void *)NULL) {
@@ -683,7 +683,7 @@ static __inline int mcs6000_ioctl_down_i2c_read(struct file *file, unsigned char
 	int err = 0;
 	struct i2c_msg msg;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (ts == (void *)NULL) {
@@ -713,7 +713,7 @@ int mcs6000_ts_ioctl_down(struct inode *inode, struct file *file, unsigned int c
 	int err = 0;
 	struct mcs6000_ts_down_ioctl_i2c_type client_data;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (_IOC_NR(cmd) >= MCS6000_TS_DOWN_IOCTL_MAXNR)
@@ -817,7 +817,7 @@ static int mcs6000_ioctl(struct inode *inode, struct file *file,
 	unsigned char fw_ver = 0, hw_ver = 0;
 	
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	switch (_IOC_TYPE(cmd)) {
@@ -853,7 +853,7 @@ static int mcs6000_open(struct inode *inode, struct file *file)
 {
 	struct mcs6000_ts_data *ts = mcs6000_ext_ts;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (ts == (void *)NULL)
@@ -884,7 +884,7 @@ static int mcs6000_release(struct inode *inode, struct file *file)
 {
 	struct mcs6000_ts_data *ts = file->private_data;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (ts == (void *)NULL)
@@ -892,7 +892,7 @@ static int mcs6000_release(struct inode *inode, struct file *file)
 
 	if (ts->status == MCS6000_DEV_SUSPEND) {
 		ts->power(OFF);
-		//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+		if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 			DMSG("touch download done: power off by ioctl\n");
 	} 
 	else {
@@ -1158,7 +1158,7 @@ static int mcs6000_ts_probe(struct i2c_client *client, const struct i2c_device_i
 
 	struct touch_platform_data *pdata;
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
@@ -1294,7 +1294,7 @@ static int mcs6000_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		goto err_input_register_device_failed;
 	}
 
-	//if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 		DMSG("MCS-6000 IRQ#=%d, IRQ_GPIO#=%d\n", ts->num_irq, ts->intr_gpio);
 
 	if (client->irq) {
@@ -1382,7 +1382,7 @@ static int mcs6000_ts_remove(struct i2c_client *client)
 	int i = 0;
 
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -1406,7 +1406,7 @@ static int mcs6000_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 	int ret = 0;
 	struct mcs6000_ts_data *ts = i2c_get_clientdata(client);
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 	
 	if(ts->irq_sync == 0){
@@ -1437,7 +1437,7 @@ static int mcs6000_ts_resume(struct i2c_client *client)
 	int ret = 0;
 	struct mcs6000_ts_data *ts = i2c_get_clientdata(client);
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	gpio_request(ts->num_irq, "MCS6000-IRQ");	
@@ -1470,7 +1470,7 @@ static void mcs6000_early_suspend(struct early_suspend * h)
 {	
 	struct mcs6000_ts_data *ts = container_of(h, struct mcs6000_ts_data, early_suspend);
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (ts == (void *)NULL) {
@@ -1486,7 +1486,7 @@ static void mcs6000_late_resume(struct early_suspend * h)
 {	
 	struct mcs6000_ts_data *ts = container_of(h, struct mcs6000_ts_data, early_suspend);
 
-	//if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
+	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
 		DMSG("\n");
 
 	if (ts == (void *)NULL) {
