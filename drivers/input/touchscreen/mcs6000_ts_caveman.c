@@ -108,8 +108,8 @@ static struct workqueue_struct *mcs6000_wq;
 struct mcs6000_ts_data {
 	struct i2c_client *client;
 	struct input_dev *input_dev;
-	struct work_struct work;
-	//struct delayed_work work;
+	//struct work_struct work;
+	struct delayed_work work;
 	struct wake_lock wakelock;
 	int num_irq;
 	int intr_gpio;
@@ -223,8 +223,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	  static int touch_pressed = 0;
 
 	  //What is done here?
-	  //struct mcs6000_ts_data *ts = container_of(to_delayed_work(work), struct mcs6000_ts_data, work);
-	  struct mcs6000_ts_data *ts = container_of(work, struct mcs6000_ts_data, work);
+	  struct mcs6000_ts_data *ts = container_of(to_delayed_work(work), struct mcs6000_ts_data, work);
 	  //gpio interrupt line is held low if finger
 	  //is on screen
 	  ts->pendown = !gpio_get_value(ts->intr_gpio);
@@ -289,8 +288,8 @@ static irqreturn_t mcs6000_ts_irq_handler(int irq, void *dev_id)
 	if (gpio_get_value(ts->intr_gpio) == 0) {
 		disable_irq_nosync(ts->client->irq);
 		ts->irq_sync--;
-		queue_work(mcs6000_wq, &ts->work);
-		//queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+		//queue_work(mcs6000_wq, &ts->work);
+		queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
 	}
 	else  {
 		printk(KERN_INFO "mcs6000_ts_irq_handler: check int gpio level\n");
@@ -953,8 +952,8 @@ static int mcs6000_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		goto err_alloc_data_failed;
 	}	
 
-	INIT_WORK(&ts->work, mcs6000_ts_work_func);
-	//INIT_DELAYED_WORK(&ts->work, mcs6000_ts_work_func);
+	//INIT_WORK(&ts->work, mcs6000_ts_work_func);
+	INIT_DELAYED_WORK(&ts->work, mcs6000_ts_work_func);
 	ts->client = client;
 	i2c_set_clientdata(client, ts);
 	pdata = client->dev.platform_data;
@@ -1176,8 +1175,8 @@ static int mcs6000_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 		ts->irq_sync--;
 	}
 
-	ret = cancel_work_sync(&ts->work);
-	//cancel_delayed_work_sync(&ts->work);
+	//ret = cancel_work_sync(&ts->work);
+	cancel_delayed_work_sync(&ts->work);
 	
 //	ret = i2c_smbus_write_byte_data(ts->client, 0x1d, 0x00); /* disable int */
 //	if (ret < 0)
