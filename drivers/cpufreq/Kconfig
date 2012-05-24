@@ -100,13 +100,6 @@ config CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
 	  governor. If unsure have a look at the help section of the
 	  driver. Fallback governor will be the performance governor.
 
-config CPU_FREQ_DEFAULT_GOV_LIONHEART
-	bool "lionheart"
-	select CPU_FREQ_GOV_LIONHEART
-	select CPU_FREQ_GOV_PERFORMANCE
-	help
-	  Modified version of governor 'conservative'.
-		  
 config CPU_FREQ_DEFAULT_GOV_INTERACTIVE
 	bool "interactive"
 	select CPU_FREQ_GOV_INTERACTIVE
@@ -127,6 +120,12 @@ config CPU_FREQ_DEFAULT_GOV_SMARTASS2
 	select CPU_FREQ_GOV_SMARTASS2
 	help
 	  Use the CPUFreq governor 'smartassV2' as default.
+
+config CPU_FREQ_DEFAULT_GOV_MINMAX
+        bool "minmax"
+        select CPU_FREQ_GOV_MINMAX
+        help
+          Use the CPUFreq governor 'minmax' as default.
 
 #config CPU_FREQ_DEFAULT_GOV_LULZACTIVE
 #	bool "lulzactive"
@@ -238,16 +237,6 @@ config CPU_FREQ_GOV_CONSERVATIVE
 
 	  If in doubt, say N.
 
-config CPU_FREQ_GOV_LIONHEART
-    tristate "'lionheart' cpufreq governor"
-    depends on CPU_FREQ
-    help
-      'lionheart' - modified version of 'conservative' governor
-	  A dynamic cpufreq governor for Low Latency Frequency Transition
-	  capable processors optimised for use in a battery environment
-	  
-	  If in doubt, say N.
-	  
 config CPU_FREQ_GOV_SMARTASS2
 	tristate "'smartassV2' cpufreq governor"
 	depends on CPU_FREQ
@@ -264,6 +253,16 @@ config CPU_FREQ_GOV_SMARTASS2
 	  So the entire frequency range is available for the governor
 	  to use during screen-on and screen-off state. The motto of this governor
 	  is a balance between performance and battery.
+
+	  If in doubt, say N.
+
+config CPU_FREQ_GOV_MINMAX
+	tristate "'minmax' cpufreq governor"
+	depends on CPU_FREQ
+	help
+	  'minmax' - this driver tries to minimize the frequency jumps by limiting
+	  the the selected frequencies to either the min or the max frequency of
+	  the policy. The frequency is selected according to the load.
 
 	  If in doubt, say N.
 
