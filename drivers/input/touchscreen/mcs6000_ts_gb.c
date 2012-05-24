@@ -54,7 +54,7 @@ static void mcs6000_late_resume(struct early_suspend *h);
 #endif
 
 
-#define TS_POLLING_TIME 1 /* msec */ //10
+#define TS_POLLING_TIME 10 /* msec */
 #define	TS_SENSE_CH_CNT	21
 
 
@@ -312,13 +312,13 @@ static __inline void mcs6000_single_ts_event_release(struct mcs6000_ts_data *ts)
 static void mcs6000_ts_work_func(struct work_struct *work)
 {
 	int x1 = 0, y1 = 0;
+#ifdef LG_FW_MULTI_TOUCH
+	int x2 = 0, y2 = 0;
+	static int pre_x1, pre_x2, pre_y1, pre_y2;
 	static int flipy=0;
 	static int flipx=0;
 	static int flipdx=1;
 	static int flipdy=1;
-#ifdef LG_FW_MULTI_TOUCH
-	int x2 = 0, y2 = 0;
-	static int pre_x1, pre_x2, pre_y1, pre_y2;
 	static unsigned int s_input_type = NON_TOUCHED_STATE;
 #endif
 	unsigned int input_type;
@@ -414,8 +414,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			*/
 #ifdef LG_FW_MULTI_TOUCH
 			if (input_type == MULTI_POINT_TOUCH) {
-                                 //flipping x and y of points (the axis inverse workaround)
-                                if(abs(y1-y2) <= 35 && flipdx ){
+				//flipping x and y of points (the axis inverse workaround)
+				if(abs(y1-y2) <= 35 && flipdx ){
 					y1=y2; //trying to make the process smoother
 					flipx=!flipx;
 					flipdx=0;
@@ -425,16 +425,16 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 					flipy=!flipy;
 					flipdy=0;
 				}
-				
+
 				if(flipx)
 					swap(x1,x2);
-				
+
 				if(flipy)
 					swap(y1,y2);
-				
+
 				if(abs(y1-y2) > 35)
 					flipdx=1;
-				
+
 				if(abs(x1-x2) > 35)
 					flipdy=1;
 				mcs6000_multi_ts_event_touch(x1, y1, x2, y2, PRESSED, ts);
