@@ -53,7 +53,7 @@ static void mcs6000_early_suspend(struct early_suspend *h);
 static void mcs6000_late_resume(struct early_suspend *h);
 #endif
 
-#define TS_SAMPLERATE_HZ 50 /* touchscreen samplerate [Hz]*/
+#define TS_SAMPLERATE_HZ 1 //50 /* touchscreen samplerate [Hz]*/
 #define	TS_SENSE_CH_CNT	21
 
 #define MCS6000_I2C_TS_NAME		"touch_mcs6000"
@@ -233,8 +233,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	    {
 	      printk(KERN_ERR "%s touch ic read error\n", __FUNCTION__);
 	      //retry at next sample
-	      //queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
-	      queue_work(mcs6000_wq, &ts->work);
+	      queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+	      //queue_work(mcs6000_wq, &ts->work);
 	    }
 
 
@@ -264,8 +264,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	              input_sync(ts->input_dev);
 	            }
 	        }
-	      //queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
-	      queue_work(mcs6000_wq, &ts->work);
+	      queue_delayed_work(mcs6000_wq, &ts->work, (HZ / TS_SAMPLERATE_HZ));
+	      //queue_work(mcs6000_wq, &ts->work);
 	    }
 	  else   /* touch released case */
 	    {
