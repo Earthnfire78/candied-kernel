@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 /*
- * Copyright (C) 2000 - 2010, Intel Corp.
+ * Copyright (C) 2000 - 2012, Intel Corp.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,7 @@
 #include "accommon.h"
 #include "actables.h"
 #include <linux/tboot.h>
+#include <linux/module.h>
 
 #define _COMPONENT          ACPI_HARDWARE
 ACPI_MODULE_NAME("hwsleep")
@@ -307,7 +308,7 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
 		return_ACPI_STATUS(status);
 	}
 	ACPI_DEBUG_PRINT((ACPI_DB_INIT,
-			  "Entering sleep state [S%d]\n", sleep_state));
+			  "Entering sleep state [S%u]\n", sleep_state));
 
 	/* Clear the SLP_EN and SLP_TYP fields */
 

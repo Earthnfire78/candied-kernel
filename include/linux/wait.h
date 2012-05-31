@@ -77,13 +77,13 @@ struct task_struct;
 #define __WAIT_BIT_KEY_INITIALIZER(word, bit)				\
 	{ .flags = word, .bit_nr = bit, }
 
-extern void __init_waitqueue_head(wait_queue_head_t *q, struct lock_class_key *);
+extern void __init_waitqueue_head(wait_queue_head_t *q, const char *name, struct lock_class_key *);
 
 #define init_waitqueue_head(q)				\
 	do {						\
 		static struct lock_class_key __key;	\
 							\
-		__init_waitqueue_head((q), &__key);	\
+		__init_waitqueue_head((q), #q, &__key);	\
 	} while (0)
 
 #ifdef CONFIG_LOCKDEP
@@ -683,6 +683,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
 		(wait)->private = current;				\
 		(wait)->func = autoremove_wake_function;		\
 		INIT_LIST_HEAD(&(wait)->task_list);			\
+		(wait)->flags = 0;					\
 	} while (0)
 
 /**

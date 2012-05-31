@@ -5,7 +5,7 @@
     Copyright (C) 2007  Herbert Valerio Riedel <hvr@gnu.org>
 
     Complete datasheet is available at GMT's website:
-      http://www.gmt.com.tw/datasheet/g760a.pdf
+      http://www.gmt.com.tw/product/datasheet/EDS-760A.pdf 
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -166,7 +166,7 @@ static ssize_t set_pwm(struct device *dev, struct device_attribute *da,
 	struct g760a_data *data = g760a_update_client(dev);
 	unsigned long val;
 
-	if (strict_strtoul(buf, 10, &val))
+	if (kstrtoul(buf, 10, &val))
 		return -EINVAL;
 
 	mutex_lock(&data->update_lock);

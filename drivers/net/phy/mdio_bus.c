@@ -37,22 +37,35 @@
 #include <asm/uaccess.h>
 
 /**
- * mdiobus_alloc - allocate a mii_bus structure
+ * mdiobus_alloc_size - allocate a mii_bus structure
+ * @size: extra amount of memory to allocate for private storage.
+ * If non-zero, then bus->priv is points to that memory.
  *
  * Description: called by a bus driver to allocate an mii_bus
  * structure to fill in.
  */
-struct mii_bus *mdiobus_alloc(void)
+struct mii_bus *mdiobus_alloc_size(size_t size)
 {
 	struct mii_bus *bus;
+	size_t aligned_size = ALIGN(sizeof(*bus), NETDEV_ALIGN);
+	size_t alloc_size;
 
-	bus = kzalloc(sizeof(*bus), GFP_KERNEL);
-	if (bus != NULL)
+	/* If we alloc extra space, it should be aligned */
+	if (size)
+		alloc_size = aligned_size + size;
+	else
+		alloc_size = sizeof(*bus);
+
+	bus = kzalloc(alloc_size, GFP_KERNEL);
+	if (bus) {
 		bus->state = MDIOBUS_ALLOCATED;
+		if (size)
+			bus->priv = (void *)bus + aligned_size;
+	}
 
 	return bus;
 }
-EXPORT_SYMBOL(mdiobus_alloc);
+EXPORT_SYMBOL(mdiobus_alloc_size);
 
 /**
  * mdiobus_release - mii_bus device release callback
@@ -308,7 +321,7 @@ static int mdio_bus_suspend(struct device *dev)
 	 * may call phy routines that try to grab the same lock, and that may
 	 * lead to a deadlock.
 	 */
-	if (phydev->attached_dev)
+	if (phydev->attached_dev && phydev->adjust_link)
 		phy_stop_machine(phydev);
 
 	if (!mdio_bus_phy_may_suspend(phydev))
@@ -331,7 +344,7 @@ static int mdio_bus_resume(struct device *dev)
 		return ret;
 
 no_resume:
-	if (phydev->attached_dev)
+	if (phydev->attached_dev && phydev->adjust_link)
 		phy_start_machine(phydev, NULL);
 
 	return 0;

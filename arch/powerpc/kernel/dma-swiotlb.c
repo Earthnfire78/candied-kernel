@@ -24,6 +24,21 @@
 
 unsigned int ppc_swiotlb_enable;
 
+static u64 swiotlb_powerpc_get_required(struct device *dev)
+{
+	u64 end, mask, max_direct_dma_addr = dev->archdata.max_direct_dma_addr;
+
+	end = memblock_end_of_DRAM();
+	if (max_direct_dma_addr && end > max_direct_dma_addr)
+		end = max_direct_dma_addr;
+	end += get_dma_offset(dev);
+
+	mask = 1ULL << (fls64(end) - 1);
+	mask += mask - 1;
+
+	return mask;
+}
+
 /*
  * At the moment, all platforms that use this code only require
  * swiotlb to be used if we're operating on HIGHMEM.  Since
@@ -44,6 +59,7 @@ struct dma_map_ops swiotlb_dma_ops = {
 	.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
 	.sync_sg_for_device = swiotlb_sync_sg_for_device,
 	.mapping_error = swiotlb_dma_mapping_error,
+	.get_required_mask = swiotlb_powerpc_get_required,
 };
 
 void pci_dma_dev_setup_swiotlb(struct pci_dev *pdev)
@@ -82,17 +98,9 @@ static struct notifier_block ppc_swiotlb_plat_bus_notifier = {
 	.priority = 0,
 };
 
-static struct notifier_block ppc_swiotlb_of_bus_notifier = {
-	.notifier_call = ppc_swiotlb_bus_notify,
-	.priority = 0,
-};
-
 int __init swiotlb_setup_bus_notifier(void)
 {
 	bus_register_notifier(&platform_bus_type,
 			      &ppc_swiotlb_plat_bus_notifier);
-	bus_register_notifier(&of_platform_bus_type,
-			      &ppc_swiotlb_of_bus_notifier);
-
 	return 0;
 }

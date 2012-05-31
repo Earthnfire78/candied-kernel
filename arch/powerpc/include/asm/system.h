@@ -120,7 +120,6 @@ extern void do_dabr(struct pt_regs *regs, unsigned long address,
 		    unsigned long error_code);
 #endif
 extern void print_backtrace(unsigned long *);
-extern void show_regs(struct pt_regs * regs);
 extern void flush_instruction_cache(void);
 extern void hard_reset_now(void);
 extern void poweroff_now(void);
@@ -154,8 +153,8 @@ extern void enable_kernel_spe(void);
 extern void giveup_spe(struct task_struct *);
 extern void load_up_spe(struct task_struct *);
 extern int fix_alignment(struct pt_regs *);
-extern void cvt_fd(float *from, double *to, struct thread_struct *thread);
-extern void cvt_df(double *from, float *to, struct thread_struct *thread);
+extern void cvt_fd(float *from, double *to);
+extern void cvt_df(double *from, float *to);
 
 #ifndef CONFIG_SMP
 extern void discard_lazy_cpu_state(void);
@@ -194,8 +193,8 @@ extern void cacheable_memzero(void *p, unsigned int nb);
 extern void *cacheable_memcpy(void *, const void *, unsigned int);
 extern int do_page_fault(struct pt_regs *, unsigned long, unsigned long);
 extern void bad_page_fault(struct pt_regs *, unsigned long, int);
-extern int die(const char *, struct pt_regs *, long);
 extern void _exception(int, struct pt_regs *, int, unsigned long);
+extern void die(const char *, struct pt_regs *, long);
 extern void _nmask_and_or_msr(unsigned long nmask, unsigned long or_val);
 
 #ifdef CONFIG_BOOKE_WDT
@@ -219,11 +218,18 @@ extern int mem_init_done;	/* set on boot once kmalloc can be called */
 extern int init_bootmem_done;	/* set once bootmem is available */
 extern phys_addr_t memory_limit;
 extern unsigned long klimit;
-
-extern void *alloc_maybe_bootmem(size_t size, gfp_t mask);
 extern void *zalloc_maybe_bootmem(size_t size, gfp_t mask);
 
 extern int powersave_nap;	/* set if nap mode can be used in idle loop */
+void cpu_idle_wait(void);
+
+#ifdef CONFIG_PSERIES_IDLE
+extern void update_smt_snooze_delay(int snooze);
+extern int pseries_notify_cpuidle_add_cpu(int cpu);
+#else
+static inline void update_smt_snooze_delay(int snooze) {}
+static inline int pseries_notify_cpuidle_add_cpu(int cpu) { return 0; }
+#endif
 
 /*
  * Atomic exchange
@@ -515,11 +521,8 @@ __cmpxchg_local(volatile void *ptr, unsigned long old, unsigned long new,
  * powers of 2 writes until it reaches sufficient alignment).
  *
  * Based on this we disable the IP header alignment in network drivers.
- * We also modify NET_SKB_PAD to be a cacheline in size, thus maintaining
- * cacheline alignment of buffers.
  */
 #define NET_IP_ALIGN	0
-#define NET_SKB_PAD	L1_CACHE_BYTES
 
 #define cmpxchg64(ptr, o, n)						\
   ({									\

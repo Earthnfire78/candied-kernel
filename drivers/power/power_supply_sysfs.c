@@ -14,6 +14,7 @@
 #include <linux/ctype.h>
 #include <linux/power_supply.h>
 #include <linux/slab.h>
+#include <linux/stat.h>
 
 #include "power_supply.h"
 
@@ -28,50 +29,6 @@
  * Only modification that the name is not tried to be resolved
  * (as a macro let's say).
  */
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-/* LGE_CHANGES_S [woonghee@lge.com] 2009-09-25, battery charging */
-#include <mach/msm_battery.h>
-#include <mach/msm_battery_thunderc.h>
-#endif
-
-/*
- * This is because the name "current" breaks the device attr macro.
- * The "current" word resolves to "(get_current())" so instead of
- * "current" "(get_current())" appears in the sysfs.
- *
- * The source of this definition is the device.h which calls __ATTR
- * macro in sysfs.h which calls the __stringify macro.
- *
- * Only modification that the name is not tried to be resolved
- * (as a macro let's say).
- */
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-/* LGE_CHANGES_S [woonghee@lge.com] 2009-09-25, battery charging */
-#define PSEUDO_BATT_ATTR(_name)					\
-{									\
-	.attr = { .name = #_name, .mode = 0666 },	\
-	.show = pseudo_batt_show_property,				\
-	.store = pseudo_batt_store_property,							\
-}
-/* LGE_CHANGE
- * Support block charging for Q-gate
- * 2010-07-18, taehung.kim@lge.com
- */
-#define BLOCK_CHARGING_ATTR(_name)					\
-{									\
-	.attr = { .name = #_name, .mode = 0666 },	\
-	.show = block_charging_show_property,				\
-	.store = block_charging_store_property,							\
-}
-#endif
 
 #define POWER_SUPPLY_ATTR(_name)					\
 {									\
@@ -86,7 +43,8 @@ static ssize_t power_supply_show_property(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf) {
 	static char *type_text[] = {
-		"Battery", "UPS", "Mains", "USB"
+		"Unknown", "Battery", "UPS", "Mains", "USB",
+		"USB_DCP", "USB_CDP", "USB_ACA"
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"
@@ -105,6 +63,9 @@ static ssize_t power_supply_show_property(struct device *dev,
 	static char *capacity_level_text[] = {
 		"Unknown", "Critical", "Low", "Normal", "High", "Full"
 	};
+	static char *scope_text[] = {
+		"Unknown", "System", "Device"
+	};
 	ssize_t ret = 0;
 	struct power_supply *psy = dev_get_drvdata(dev);
 	const ptrdiff_t off = attr - power_supply_attrs;
@@ -120,8 +81,8 @@ static ssize_t power_supply_show_property(struct device *dev,
 			dev_dbg(dev, "driver has no data for `%s' property\n",
 				attr->attr.name);
 		else if (ret != -ENODEV)
-			dev_err(dev, "driver failed to report `%s' property\n",
-				attr->attr.name);
+			dev_err(dev, "driver failed to report `%s' property: %zd\n",
+				attr->attr.name, ret);
 		return ret;
 	}
 
@@ -137,131 +98,13 @@ static ssize_t power_supply_show_property(struct device *dev,
 		return sprintf(buf, "%s\n", capacity_level_text[value.intval]);
 	else if (off == POWER_SUPPLY_PROP_TYPE)
 		return sprintf(buf, "%s\n", type_text[value.intval]);
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-	/* LGE_CHANGES_S [woonghee.park@lge.com] 2010-02-09, [VS740] */
-	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME && off <= POWER_SUPPLY_PROP_SERIAL_NUMBER)
-#else
+	else if (off == POWER_SUPPLY_PROP_SCOPE)
+		return sprintf(buf, "%s\n", scope_text[value.intval]);
 	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
-#endif
 		return sprintf(buf, "%s\n", value.strval);
 
 	return sprintf(buf, "%d\n", value.intval);
 }
-
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-
-/* LGE_CHANGES_S [woonghee@lge.com] 2009-09-25, battery charging */
-static ssize_t pseudo_batt_show_property(struct device *dev,
-		struct device_attribute *attr,
-		char *buf)
-{
-	ssize_t ret;
-	struct power_supply *psy = dev_get_drvdata(dev);
-	const ptrdiff_t off = attr - power_supply_attrs;
-	union power_supply_propval value;
-
-	static char *pseudo_batt[] = {
-		"NORMAL", "PSEUDO",
-	};
-
-	ret = psy->get_property(psy, off, &value);
-
-	if (ret < 0) {
-		if (ret != -ENODEV)
-			dev_err(dev, "driver failed to report `%s' property\n",
-					attr->attr.name);
-		return ret;
-	}
-	if (off == POWER_SUPPLY_PROP_PSEUDO_BATT)
-		return sprintf(buf, "[%s] \nusage: echo [mode] [ID] [therm] [temp] [volt] [cap] [charging] > pseudo_batt\n", pseudo_batt[value.intval]);
-
-	return 0;
-}
-
-extern int pseudo_batt_set(struct pseudo_batt_info_type*);
-
-static ssize_t pseudo_batt_store_property(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	int ret = -EINVAL;
-	struct pseudo_batt_info_type info;
-
-	if (sscanf(buf, "%d %d %d %d %d %d %d", &info.mode, &info.id, &info.therm,
-				&info.temp, &info.volt, &info.capacity, &info.charging) != 7)
-	{
-		if(info.mode == 1) //pseudo mode
-		{
-			printk(KERN_ERR "usage : echo [mode] [ID] [therm] [temp] [volt] [cap] [charging] > pseudo_batt");
-			goto out;
-		}
-	}
-	pseudo_batt_set(&info);
-	ret = count;
-out:
-	return ret;
-}
-
-/* LGE_CHNAGE
- * Support block charging for Q-gate
- * 2010-07-18, taehung.kim@lge.com
- */
-extern void batt_block_charging_set(int);
-static ssize_t block_charging_store_property(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	int ret = -EINVAL;
-	int block;
-	
-
-	if(sscanf(buf, "%d",&block) != 1)
-	{
-		printk("%s:Too many argument\n",__func__);
-		goto out;
-	}
-	printk("%s:block charging=%d\n",__func__,block);
-	batt_block_charging_set(block);
-	ret = count;
-out:
-	return ret;
-}
-static ssize_t block_charging_show_property(struct device *dev,
-		struct device_attribute *attr,
-		char *buf)
-{
-	ssize_t ret;
-	struct power_supply *psy = dev_get_drvdata(dev);
-	const ptrdiff_t off = attr - power_supply_attrs;
-	union power_supply_propval value;
-
-	static char *block_charging_mode[] = {
-		"BLOCK CHARGING", "NORMAL",
-	};
-
-	ret = psy->get_property(psy, off, &value);
-
-	if (ret < 0) {
-		if (ret != -ENODEV)
-			dev_err(dev, "driver failed to report `%s' property\n",
-					attr->attr.name);
-		return ret;
-	}
-
-	if (off == POWER_SUPPLY_PROP_BLOCK_CHARGING)
-		return sprintf(buf, "[%s]", block_charging_mode[value.intval]);
-
-	return 0;
-}
-#endif
 
 static ssize_t power_supply_store_property(struct device *dev,
 					   struct device_attribute *attr,
@@ -300,17 +143,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(voltage_min),
 	POWER_SUPPLY_ATTR(voltage_max_design),
 	POWER_SUPPLY_ATTR(voltage_min_design),
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || \
-	defined (CONFIG_MACH_MSM7X27_GISELE) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-	/* LGE_CHANGES_S [woonghee@lge.com]	2009-09-25, battery charging */
-	POWER_SUPPLY_ATTR(batt_vol),
-#else	/* origin */
 	POWER_SUPPLY_ATTR(voltage_now),
-#endif	
 	POWER_SUPPLY_ATTR(voltage_avg),
 	POWER_SUPPLY_ATTR(current_max),
 	POWER_SUPPLY_ATTR(current_now),
@@ -332,55 +165,30 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(energy_avg),
 	POWER_SUPPLY_ATTR(capacity),
 	POWER_SUPPLY_ATTR(capacity_level),
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || \
-	defined (CONFIG_MACH_MSM7X27_GISELE) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-	/* LGE_CHANGES_S [woonghee@lge.com]	2009-09-25, battery charging */
-	/* need to match sysfs name, see BATTERY_TEMPERATURE_PATH */
-	POWER_SUPPLY_ATTR(batt_temp),
-#else
 	POWER_SUPPLY_ATTR(temp),
-#endif
 	POWER_SUPPLY_ATTR(temp_ambient),
 	POWER_SUPPLY_ATTR(time_to_empty_now),
 	POWER_SUPPLY_ATTR(time_to_empty_avg),
 	POWER_SUPPLY_ATTR(time_to_full_now),
 	POWER_SUPPLY_ATTR(time_to_full_avg),
 	POWER_SUPPLY_ATTR(type),
+	POWER_SUPPLY_ATTR(scope),
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(serial_number),
-#if defined (CONFIG_MACH_MSM7X27_ALOHAV) || defined (CONFIG_MACH_MSM7X27_THUNDERC)
-/* LGE_CHNAGE
- * ADD THUNDERC feature to use VS740 BATT DRIVER IN THUNDERC
- * 2010-05-13, taehung.kim@lge.com
- */
-	/* LGE_CHANGES_S [woonghee.park@lge.com] 2010-02-09, [VS740] */
-	POWER_SUPPLY_ATTR(valid_batt_id),
-	POWER_SUPPLY_ATTR(batt_therm),
-	PSEUDO_BATT_ATTR(pseudo_batt),
-/* LGE_CHNAGE
- * Support block charging for Q-gate
- * 2010-07-18, taehung.kim@lge.com
- */
-	BLOCK_CHARGING_ATTR(block_charging),//43
-#endif
 };
 
 static struct attribute *
 __power_supply_attrs[ARRAY_SIZE(power_supply_attrs) + 1];
 
-static mode_t power_supply_attr_is_visible(struct kobject *kobj,
+static umode_t power_supply_attr_is_visible(struct kobject *kobj,
 					   struct attribute *attr,
 					   int attrno)
 {
 	struct device *dev = container_of(kobj, struct device, kobj);
 	struct power_supply *psy = dev_get_drvdata(dev);
-	mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
+	umode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
 	int i;
 
 	if (attrno == POWER_SUPPLY_PROP_TYPE)
@@ -469,7 +277,7 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 		attr = &power_supply_attrs[psy->properties[j]];
 
 		ret = power_supply_show_property(dev, attr, prop_buf);
-		if (ret == -ENODEV) {
+		if (ret == -ENODEV || ret == -ENODATA) {
 			/* When a battery is absent, we expect -ENODEV. Don't abort;
 			   send the uevent with at least the the PRESENT=0 property */
 			ret = 0;

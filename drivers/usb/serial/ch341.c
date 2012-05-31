@@ -70,7 +70,7 @@
 #define CH341_NBREAK_BITS_REG2 0x40
 
 
-static int debug;
+static bool debug;
 
 static const struct usb_device_id id_table[] = {
 	{ USB_DEVICE(0x4348, 0x5523) },
@@ -335,13 +335,12 @@ static int ch341_open(struct tty_struct *tty, struct usb_serial_port *port)
 		goto out;
 
 	dbg("%s - submitting interrupt urb", __func__);
-	port->interrupt_in_urb->dev = serial->dev;
 	r = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
 	if (r) {
 		dev_err(&port->dev, "%s - failed submitting interrupt urb,"
 			" error %d\n", __func__, r);
 		ch341_close(port);
-		return -EPROTO;
+		goto out;
 	}
 
 	r = usb_serial_generic_open(tty, port);
@@ -432,7 +431,7 @@ out:
 	kfree(break_reg);
 }
 
-static int ch341_tiocmset(struct tty_struct *tty, struct file *file,
+static int ch341_tiocmset(struct tty_struct *tty,
 			  unsigned int set, unsigned int clear)
 {
 	struct usb_serial_port *port = tty->driver_data;
@@ -553,8 +552,7 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
 	return 0;
 }
 
-/*static int ch341_ioctl(struct usb_serial_port *port, struct file *file,*/
-static int ch341_ioctl(struct tty_struct *tty, struct file *file,
+static int ch341_ioctl(struct tty_struct *tty,
 			unsigned int cmd, unsigned long arg)
 {
 	struct usb_serial_port *port = tty->driver_data;
@@ -573,7 +571,7 @@ static int ch341_ioctl(struct tty_struct *tty, struct file *file,
 	return -ENOIOCTLCMD;
 }
 
-static int ch341_tiocmget(struct tty_struct *tty, struct file *file)
+static int ch341_tiocmget(struct tty_struct *tty)
 {
 	struct usb_serial_port *port = tty->driver_data;
 	struct ch341_private *priv = usb_get_serial_port_data(port);

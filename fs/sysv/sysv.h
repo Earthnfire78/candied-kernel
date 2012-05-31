@@ -125,7 +125,7 @@ static inline void dirty_sb(struct super_block *sb)
 /* ialloc.c */
 extern struct sysv_inode *sysv_raw_inode(struct super_block *, unsigned,
 			struct buffer_head **);
-extern struct inode * sysv_new_inode(const struct inode *, mode_t);
+extern struct inode * sysv_new_inode(const struct inode *, umode_t);
 extern void sysv_free_inode(struct inode *);
 extern unsigned long sysv_count_free_inodes(struct super_block *);
 
@@ -136,9 +136,7 @@ extern unsigned long sysv_count_free_blocks(struct super_block *);
 
 /* itree.c */
 extern void sysv_truncate(struct inode *);
-extern int __sysv_write_begin(struct file *file, struct address_space *mapping,
-			loff_t pos, unsigned len, unsigned flags,
-			struct page **pagep, void **fsdata);
+extern int sysv_prepare_chunk(struct page *page, loff_t pos, unsigned len);
 
 /* inode.c */
 extern struct inode *sysv_iget(struct super_block *, unsigned int);

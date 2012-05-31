@@ -2,9 +2,9 @@
  *
  *  Bluetooth HCI UART driver
  *
+ *  Copyright (C) 2000-2001  Qualcomm Incorporated
  *  Copyright (C) 2002-2003  Maxim Krasnyansky <maxk@qualcomm.com>
  *  Copyright (C) 2004-2005  Marcel Holtmann <marcel@holtmann.org>
- *  Copyright (c) 2000-2001, 2010, Code Aurora Forum. All rights reserved.
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,7 @@
 
 #define VERSION "2.2"
 
-static int reset = 0;
+static bool reset = 0;
 
 static struct hci_uart_proto *hup[HCI_UART_MAX_PROTO];
 
@@ -101,7 +101,7 @@ static inline void hci_uart_tx_complete(struct hci_uart *hu, int pkt_type)
 		break;
 
 	case HCI_SCODATA_PKT:
-		hdev->stat.cmd_tx++;
+		hdev->stat.sco_tx++;
 		break;
 	}
 }
@@ -210,7 +210,6 @@ static int hci_uart_close(struct hci_dev *hdev)
 static int hci_uart_send_frame(struct sk_buff *skb)
 {
 	struct hci_dev* hdev = (struct hci_dev *) skb->dev;
-	struct tty_struct *tty;
 	struct hci_uart *hu;
 
 	if (!hdev) {
@@ -222,7 +221,6 @@ static int hci_uart_send_frame(struct sk_buff *skb)
 		return -EBUSY;
 
 	hu = (struct hci_uart *) hdev->driver_data;
-	tty = hu->tty;
 
 	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type, skb->len);
 
@@ -313,8 +311,10 @@ static void hci_uart_tty_close(struct tty_struct *tty)
 
 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
 			hu->proto->close(hu);
-			hci_unregister_dev(hdev);
-			hci_free_dev(hdev);
+			if (hdev) {
+				hci_unregister_dev(hdev);
+				hci_free_dev(hdev);
+			}
 		}
 	}
 }
@@ -398,11 +398,15 @@ static int hci_uart_register_dev(struct hci_uart *hu)
 	hdev->flush = hci_uart_flush;
 	hdev->send  = hci_uart_send_frame;
 	hdev->destruct = hci_uart_destruct;
+	hdev->parent = hu->tty->dev;
 
 	hdev->owner = THIS_MODULE;
 
 	if (!reset)
 		set_bit(HCI_QUIRK_NO_RESET, &hdev->quirks);
+
+	if (test_bit(HCI_UART_RAW_DEVICE, &hu->hdev_flags))
+		set_bit(HCI_QUIRK_RAW_DEVICE, &hdev->quirks);
 
 	if (hci_register_dev(hdev) < 0) {
 		BT_ERR("Can't register HCI device");
@@ -484,6 +488,15 @@ static int hci_uart_tty_ioctl(struct tty_struct *tty, struct file * file,
 			return hu->hdev->id;
 		return -EUNATCH;
 
+	case HCIUARTSETFLAGS:
+		if (test_bit(HCI_UART_PROTO_SET, &hu->flags))
+			return -EBUSY;
+		hu->hdev_flags = arg;
+		break;
+
+	case HCIUARTGETFLAGS:
+		return hu->hdev_flags;
+
 	default:
 		err = n_tty_ioctl_helper(tty, file, cmd, arg);
 		break;
@@ -549,8 +562,8 @@ static int __init hci_uart_init(void)
 #ifdef CONFIG_BT_HCIUART_LL
 	ll_init();
 #endif
-#ifdef CONFIG_BT_HCIUART_IBS
-	ibs_init();
+#ifdef CONFIG_BT_HCIUART_ATH3K
+	ath_init();
 #endif
 
 	return 0;
@@ -569,8 +582,8 @@ static void __exit hci_uart_exit(void)
 #ifdef CONFIG_BT_HCIUART_LL
 	ll_deinit();
 #endif
-#ifdef CONFIG_BT_HCIUART_IBS
-	ibs_deinit();
+#ifdef CONFIG_BT_HCIUART_ATH3K
+	ath_deinit();
 #endif
 
 	/* Release tty registration of line discipline */

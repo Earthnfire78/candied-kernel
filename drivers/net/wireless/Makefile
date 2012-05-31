@@ -24,6 +24,7 @@ obj-$(CONFIG_B43LEGACY)		+= b43legacy/
 obj-$(CONFIG_ZD1211RW)		+= zd1211rw/
 obj-$(CONFIG_RTL8180)		+= rtl818x/
 obj-$(CONFIG_RTL8187)		+= rtl818x/
+obj-$(CONFIG_RTLWIFI)		+= rtlwifi/
 
 # 16-bit wireless PCMCIA client drivers
 obj-$(CONFIG_PCMCIA_RAYCS)	+= ray_cs.o
@@ -41,6 +42,7 @@ obj-$(CONFIG_ADM8211)	+= adm8211.o
 obj-$(CONFIG_MWL8K)	+= mwl8k.o
 
 obj-$(CONFIG_IWLWIFI)	+= iwlwifi/
+obj-$(CONFIG_IWLEGACY)	+= iwlegacy/
 obj-$(CONFIG_RT2X00)	+= rt2x00/
 
 obj-$(CONFIG_P54_COMMON)	+= p54/
@@ -49,23 +51,15 @@ obj-$(CONFIG_ATH_COMMON)	+= ath/
 
 obj-$(CONFIG_MAC80211_HWSIM)	+= mac80211_hwsim.o
 
+obj-$(CONFIG_WL1251)	+= wl1251/
 obj-$(CONFIG_WL12XX)	+= wl12xx/
+obj-$(CONFIG_WL12XX_PLATFORM_DATA)	+= wl12xx/
 
 obj-$(CONFIG_IWM)	+= iwmc3200wifi/
 
-#LGE_CHANGES_S, [jaehun.lee@lge.com], 2010-08-03, <Add BCM4329>
-obj-$(CONFIG_BCM4329)	+= bcm4329/
-obj-$(CONFIG_BRCM4329_USE_STATIC_BUF)	+= bcm4329/
-#LGE_CHANGES_E, [jaehun.lee@lge.com], 2010-08-03, <Add BCM4329>
+obj-$(CONFIG_MWIFIEX)	+= mwifiex/
 
-obj-$(CONFIG_BCM4330)	+= bcm4330/
-ifeq ($(CONFIG_BCM4330),m)
-obj-$(CONFIG_BRCM_USE_STATIC_BUF)	+= bcm4330/
-endif
+obj-$(CONFIG_BCMDHD)	+= bcmdhd/
 
-obj-$(CONFIG_BCM4325)	+= bcm4325/
-ifeq ($(CONFIG_BCM4325),m)
-obj-$(CONFIG_BRCM_USE_STATIC_BUF)	+= bcm4325/
-endif
-
-obj-$(CONFIG_LIBRA_SDIOIF)	+= libra/
+obj-$(CONFIG_BRCMFMAC)	+= brcm80211/
+obj-$(CONFIG_BRCMSMAC)	+= brcm80211/

@@ -11,6 +11,8 @@
 
 #include <linux/tracehook.h>
 #include <linux/signal.h>
+#include <linux/key.h>
+#include <asm/hw_breakpoint.h>
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
@@ -112,8 +114,9 @@ static void check_syscall_restart(struct pt_regs *regs, struct k_sigaction *ka,
 	}
 }
 
-static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
+static int do_signal(struct pt_regs *regs)
 {
+	sigset_t *oldset;
 	siginfo_t info;
 	int signr;
 	struct k_sigaction ka;
@@ -122,7 +125,7 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
 
 	if (current_thread_info()->local_flags & _TLF_RESTORE_SIGMASK)
 		oldset = &current->saved_sigmask;
-	else if (!oldset)
+	else
 		oldset = &current->blocked;
 
 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
@@ -137,6 +140,7 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
 			ti->local_flags &= ~_TLF_RESTORE_SIGMASK;
 			sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
 		}
+		regs->trap = 0;
 		return 0;               /* no signals delivered */
 	}
 
@@ -149,6 +153,8 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
 	if (current->thread.dabr)
 		set_dabr(current->thread.dabr);
 #endif
+	/* Re-enable the breakpoints for the signal stack */
+	thread_change_pc(current, regs);
 
 	if (is32) {
         	if (ka.sa.sa_flags & SA_SIGINFO)
@@ -161,6 +167,7 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
 		ret = handle_rt_signal64(signr, &ka, &info, oldset, regs);
 	}
 
+	regs->trap = 0;
 	if (ret) {
 		spin_lock_irq(&current->sighand->siglock);
 		sigorsets(&current->blocked, &current->blocked,
@@ -186,14 +193,16 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
 	return ret;
 }
 
-void do_signal(struct pt_regs *regs, unsigned long thread_info_flags)
+void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
 {
 	if (thread_info_flags & _TIF_SIGPENDING)
-		do_signal_pending(NULL, regs);
+		do_signal(regs);
 
 	if (thread_info_flags & _TIF_NOTIFY_RESUME) {
 		clear_thread_flag(TIF_NOTIFY_RESUME);
 		tracehook_notify_resume(regs);
+		if (current->replacement_session_keyring)
+			key_replace_session_keyring();
 	}
 }
 

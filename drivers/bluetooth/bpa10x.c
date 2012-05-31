@@ -62,7 +62,7 @@ struct hci_vendor_hdr {
 	__u8    type;
 	__le16  snum;
 	__le16  dlen;
-} __attribute__ ((packed));
+} __packed;
 
 static int bpa10x_recv(struct hci_dev *hdev, int queue, void *buf, int count)
 {
@@ -521,20 +521,7 @@ static struct usb_driver bpa10x_driver = {
 	.id_table	= bpa10x_table,
 };
 
-static int __init bpa10x_init(void)
-{
-	BT_INFO("Digianswer Bluetooth USB driver ver %s", VERSION);
-
-	return usb_register(&bpa10x_driver);
-}
-
-static void __exit bpa10x_exit(void)
-{
-	usb_deregister(&bpa10x_driver);
-}
-
-module_init(bpa10x_init);
-module_exit(bpa10x_exit);
+module_usb_driver(bpa10x_driver);
 
 MODULE_AUTHOR("Marcel Holtmann <marcel@holtmann.org>");
 MODULE_DESCRIPTION("Digianswer Bluetooth USB driver ver " VERSION);

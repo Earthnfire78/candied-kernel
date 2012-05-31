@@ -19,7 +19,7 @@
 #include <linux/timer.h>
 #include <linux/init.h>
 #include <linux/gpio.h>
-#include <linux/sysdev.h>
+#include <linux/device.h>
 #include <linux/platform_device.h>
 
 #include <linux/mtd/mtd.h>
@@ -147,7 +147,7 @@ static struct mtd_partition smdk_default_nand_part[] = {
 	[7] = {
 		.name	= "S3C2410 flash partition 7",
 		.offset = SZ_1M * 48,
-		.size	= SZ_16M,
+		.size	= MTDPART_SIZ_FULL,
 	}
 };
 

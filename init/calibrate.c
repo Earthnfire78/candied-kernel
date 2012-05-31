@@ -9,6 +9,7 @@
 #include <linux/init.h>
 #include <linux/timex.h>
 #include <linux/smp.h>
+#include <linux/percpu.h>
 
 unsigned long lpj_fine;
 unsigned long preset_lpj;
@@ -69,7 +70,7 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 		pre_start = 0;
 		read_current_timer(&start);
 		start_jiffies = jiffies;
-		while (jiffies <= (start_jiffies + 1)) {
+		while (time_before_eq(jiffies, start_jiffies + 1)) {
 			pre_start = start;
 			read_current_timer(&start);
 		}
@@ -77,8 +78,8 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 
 		pre_end = 0;
 		end = post_start;
-		while (jiffies <=
-		       (start_jiffies + 1 + DELAY_CALIBRATION_TICKS)) {
+		while (time_before_eq(jiffies, start_jiffies + 1 +
+					       DELAY_CALIBRATION_TICKS)) {
 			pre_end = end;
 			read_current_timer(&end);
 		}
@@ -122,7 +123,7 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 
 		/* compute the estimate */
 		estimate = (good_timer_sum/good_timer_count);
-		maxdiff = estimate >> 3;backport-calibrate-3.patch
+		maxdiff = estimate >> 3;
 
 		/* if range is within 12% let's take it */
 		if ((measured_times[max] - measured_times[min]) < maxdiff)
@@ -155,12 +156,13 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
 				min = i;
 			if (measured_times[i] > measured_times[max])
 				max = i;
-		}		
+		}
 
 	}
 
-	printk(KERN_WARNING "calibrate_delay_direct() failed to get a good "
-	       "estimate for loops_per_jiffy.\nProbably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
+	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+	       "estimate for loops_per_jiffy.\nProbably due to long platform "
+		"interrupts. Consider using \"lpj=\" boot option.\n");
 	return 0;
 }
 #else
@@ -169,8 +171,8 @@ static unsigned long __cpuinit calibrate_delay_direct(void) {return 0;}
 
 /*
  * This is the number of bits of precision for the loops_per_jiffy.  Each
- * bit takes on average 1.5/HZ seconds.  This (like the original) is a little
- * better than 1%
+ * time we refine our estimate after the first takes 1.5/HZ seconds, so try
+ * to start with a good estimate.
  * For the boot cpu we can skip the delay calibration and assign it a value
  * calculated based on the timer frequency.
  * For the rest of the CPUs we cannot assume that the timer frequency is same as
@@ -224,7 +226,7 @@ recalibrate:
 			; /* nothing */
 		ticks = jiffies;
 		__delay(lpj);
-		if (jiffies != ticks) /* longer than 1 tick */
+		if (jiffies != ticks)	/* longer than 1 tick */
 			lpj -= loopadd;
 		loopadd >>= 1;
 	}
@@ -242,12 +244,32 @@ recalibrate:
 	return lpj;
 }
 
+static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
+
+/*
+ * Check if cpu calibration delay is already known. For example,
+ * some processors with multi-core sockets may have all cores
+ * with the same calibration delay.
+ *
+ * Architectures should override this function if a faster calibration
+ * method is available.
+ */
+unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
+{
+	return 0;
+}
+
 void __cpuinit calibrate_delay(void)
 {
 	unsigned long lpj;
 	static bool printed;
+	int this_cpu = smp_processor_id();
 
-	if (preset_lpj) {
+	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
+		pr_info("Calibrating delay loop (skipped) "
+				"already calibrated this CPU");
+	} else if (preset_lpj) {
 		lpj = preset_lpj;
 		if (!printed)
 			pr_info("Calibrating delay loop (skipped) "
@@ -256,6 +278,8 @@ void __cpuinit calibrate_delay(void)
 		lpj = lpj_fine;
 		pr_info("Calibrating delay loop (skipped), "
 			"value calculated using timer frequency.. ");
+	} else if ((lpj = calibrate_delay_is_known())) {
+		;
 	} else if ((lpj = calibrate_delay_direct()) != 0) {
 		if (!printed)
 			pr_info("Calibrating delay using timer "
@@ -265,6 +289,7 @@ void __cpuinit calibrate_delay(void)
 			pr_info("Calibrating delay loop... ");
 		lpj = calibrate_delay_converge();
 	}
+	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
 	if (!printed)
 		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
 			lpj/(500000/HZ),

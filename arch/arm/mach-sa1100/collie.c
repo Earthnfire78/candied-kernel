@@ -11,7 +11,7 @@
  * published by the Free Software Foundation.
  *
  * ChangeLog:
- *  2006 Pavel Machek <pavel@suse.cz>
+ *  2006 Pavel Machek <pavel@ucw.cz>
  *  03-06-2004 John Lenz <lenz@cs.wisc.edu>
  *  06-04-2002 Chris Larson <kergoth@digitalnemesis.net>
  *  04-16-2001 Lineo Japan,Inc. ...
@@ -31,6 +31,7 @@
 #include <mach/hardware.h>
 #include <asm/mach-types.h>
 #include <asm/irq.h>
+#include <asm/page.h>
 #include <asm/setup.h>
 #include <mach/collie.h>
 
@@ -137,8 +138,6 @@ static struct pda_power_pdata collie_power_data = {
 static struct resource collie_power_resource[] = {
 	{
 		.name		= "ac",
-		.start		= gpio_to_irq(COLLIE_GPIO_AC_IN),
-		.end		= gpio_to_irq(COLLIE_GPIO_AC_IN),
 		.flags		= IORESOURCE_IRQ |
 				  IORESOURCE_IRQ_HIGHEDGE |
 				  IORESOURCE_IRQ_LOWEDGE,
@@ -241,6 +240,9 @@ static struct locomo_platform_data locomo_info = {
 struct platform_device collie_locomo_device = {
 	.name		= "locomo",
 	.id		= 0,
+	.dev		= {
+		.platform_data	= &locomo_info,
+	},
 	.num_resources	= ARRAY_SIZE(locomo_resources),
 	.resource	= locomo_resources,
 };
@@ -337,7 +339,8 @@ static void __init collie_init(void)
 
 	GPSR |= _COLLIE_GPIO_UCB1x00_RESET;
 
-
+	collie_power_resource[0].start = gpio_to_irq(COLLIE_GPIO_AC_IN);
+	collie_power_resource[0].end = gpio_to_irq(COLLIE_GPIO_AC_IN);
 	platform_scoop_config = &collie_pcmcia_config;
 
 	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
@@ -379,10 +382,9 @@ static void __init collie_map_io(void)
 }
 
 MACHINE_START(COLLIE, "Sharp-Collie")
-	.phys_io	= 0x80000000,
-	.io_pg_offst	= ((0xf8000000) >> 18) & 0xfffc,
 	.map_io		= collie_map_io,
 	.init_irq	= sa1100_init_irq,
 	.timer		= &sa1100_timer,
 	.init_machine	= collie_init,
+	.restart	= sa11x0_restart,
 MACHINE_END

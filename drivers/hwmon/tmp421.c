@@ -36,8 +36,8 @@
 #include <linux/sysfs.h>
 
 /* Addresses to scan */
-static unsigned short normal_i2c[] = { 0x2a, 0x4c, 0x4d, 0x4e, 0x4f,
-				       I2C_CLIENT_END };
+static const unsigned short normal_i2c[] = { 0x2a, 0x4c, 0x4d, 0x4e, 0x4f,
+					     I2C_CLIENT_END };
 
 enum chips { tmp421, tmp422, tmp423 };
 
@@ -157,7 +157,7 @@ static ssize_t show_fault(struct device *dev,
 		return sprintf(buf, "0\n");
 }
 
-static mode_t tmp421_is_visible(struct kobject *kobj, struct attribute *a,
+static umode_t tmp421_is_visible(struct kobject *kobj, struct attribute *a,
 				int n)
 {
 	struct device *dev = container_of(kobj, struct device, kobj);

@@ -15,6 +15,7 @@
 
 #include "gigaset.h"
 #include <linux/isdnif.h>
+#include <linux/export.h>
 
 #define SBUFSIZE	4096	/* sk_buff payload size */
 #define TRANSBUFSIZE	768	/* bytes per skb for transparent receive */
@@ -200,8 +201,6 @@ static int command_from_LL(isdn_ctrl *cntrl)
 	int ch;
 	int i;
 	size_t l;
-
-	gigaset_debugdrivers();
 
 	gig_dbg(DEBUG_CMD, "driver: %d, command: %d, arg: 0x%lx",
 		cntrl->driver, cntrl->command, cntrl->arg);
@@ -419,6 +418,8 @@ oom:
 	dev_err(bcs->cs->dev, "out of memory\n");
 	for (i = 0; i < AT_NUM; ++i)
 		kfree(commands[i]);
+	kfree(commands);
+	gigaset_free_channel(bcs);
 	return -ENOMEM;
 }
 
@@ -623,8 +624,6 @@ int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
 {
 	isdn_if *iif;
 
-	pr_info("ISDN4Linux interface\n");
-
 	iif = kmalloc(sizeof *iif, GFP_KERNEL);
 	if (!iif) {
 		pr_err("out of memory\n");
@@ -643,9 +642,7 @@ int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
 	iif->maxbufsize = MAX_BUF_SIZE;
 	iif->features = ISDN_FEATURE_L2_TRANS |
 		ISDN_FEATURE_L2_HDLC |
-#ifdef GIG_X75
 		ISDN_FEATURE_L2_X75I |
-#endif
 		ISDN_FEATURE_L3_TRANS |
 		ISDN_FEATURE_P_EURO;
 	iif->hl_hdrlen = HW_HDR_LEN;		/* Area for storing ack */
@@ -685,6 +682,7 @@ void gigaset_isdn_unregdev(struct cardstate *cs)
  */
 void gigaset_isdn_regdrv(void)
 {
+	pr_info("ISDN4Linux interface\n");
 	/* nothing to do */
 }
 

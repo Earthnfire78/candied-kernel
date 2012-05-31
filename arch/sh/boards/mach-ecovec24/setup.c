@@ -11,15 +11,16 @@
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-#include <linux/mfd/sh_mobile_sdhi.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/sh_mmcif.h>
+#include <linux/mmc/sh_mobile_sdhi.h>
 #include <linux/mtd/physmap.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/delay.h>
 #include <linux/usb/r8a66597.h>
+#include <linux/usb/renesas_usbhs.h>
 #include <linux/i2c.h>
 #include <linux/i2c/tsc2007.h>
 #include <linux/spi/spi.h>
@@ -27,13 +28,15 @@
 #include <linux/spi/mmc_spi.h>
 #include <linux/input.h>
 #include <linux/input/sh_keysc.h>
+#include <linux/sh_eth.h>
+#include <linux/videodev2.h>
 #include <video/sh_mobile_lcdc.h>
 #include <sound/sh_fsi.h>
 #include <media/sh_mobile_ceu.h>
+#include <media/soc_camera.h>
 #include <media/tw9910.h>
 #include <media/mt9t112.h>
 #include <asm/heartbeat.h>
-#include <asm/sh_eth.h>
 #include <asm/clock.h>
 #include <asm/suspend.h>
 #include <cpu/sh7724.h>
@@ -142,6 +145,8 @@ static struct resource sh_eth_resources[] = {
 static struct sh_eth_plat_data sh_eth_plat = {
 	.phy = 0x1f, /* SMSC LAN8700 */
 	.edmac_endian = EDMAC_LITTLE_ENDIAN,
+	.register_type = SH_ETH_REG_FAST_SH4,
+	.phy_interface = PHY_INTERFACE_MODE_MII,
 	.ether_link_active_low = 1
 };
 
@@ -153,9 +158,6 @@ static struct platform_device sh_eth_device = {
 	},
 	.num_resources = ARRAY_SIZE(sh_eth_resources),
 	.resource = sh_eth_resources,
-	.archdata = {
-		.hwblk_id = HWBLK_ETHER,
-	},
 };
 
 /* USB0 host */
@@ -230,20 +232,112 @@ static struct platform_device usb1_common_device = {
 	.resource	= usb1_common_resources,
 };
 
+/*
+ * USBHS
+ */
+static int usbhs_get_id(struct platform_device *pdev)
+{
+	return gpio_get_value(GPIO_PTB3);
+}
+
+static struct renesas_usbhs_platform_info usbhs_info = {
+	.platform_callback = {
+		.get_id		= usbhs_get_id,
+	},
+	.driver_param = {
+		.buswait_bwait		= 4,
+		.detection_delay	= 5,
+		.d0_tx_id = SHDMA_SLAVE_USB1D0_TX,
+		.d0_rx_id = SHDMA_SLAVE_USB1D0_RX,
+		.d1_tx_id = SHDMA_SLAVE_USB1D1_TX,
+		.d1_rx_id = SHDMA_SLAVE_USB1D1_RX,
+	},
+};
+
+static struct resource usbhs_resources[] = {
+	[0] = {
+		.start	= 0xa4d90000,
+		.end	= 0xa4d90124 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= 66,
+		.end	= 66,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device usbhs_device = {
+	.name	= "renesas_usbhs",
+	.id	= 1,
+	.dev = {
+		.dma_mask		= NULL,         /*  not use dma */
+		.coherent_dma_mask	= 0xffffffff,
+		.platform_data		= &usbhs_info,
+	},
+	.num_resources	= ARRAY_SIZE(usbhs_resources),
+	.resource	= usbhs_resources,
+};
+
 /* LCDC */
+static const struct fb_videomode ecovec_lcd_modes[] = {
+	{
+		.name		= "Panel",
+		.xres		= 800,
+		.yres		= 480,
+		.left_margin	= 220,
+		.right_margin	= 110,
+		.hsync_len	= 70,
+		.upper_margin	= 20,
+		.lower_margin	= 5,
+		.vsync_len	= 5,
+		.sync		= 0, /* hsync and vsync are active low */
+	},
+};
+
+static const struct fb_videomode ecovec_dvi_modes[] = {
+	{
+		.name		= "DVI",
+		.xres		= 1280,
+		.yres		= 720,
+		.left_margin	= 220,
+		.right_margin	= 110,
+		.hsync_len	= 40,
+		.upper_margin	= 20,
+		.lower_margin	= 5,
+		.vsync_len	= 5,
+		.sync = 0, /* hsync and vsync are active low */
+	},
+};
+
+static int ecovec24_set_brightness(void *board_data, int brightness)
+{
+	gpio_set_value(GPIO_PTR1, brightness);
+
+	return 0;
+}
+
+static int ecovec24_get_brightness(void *board_data)
+{
+	return gpio_get_value(GPIO_PTR1);
+}
+
 static struct sh_mobile_lcdc_info lcdc_info = {
 	.ch[0] = {
 		.interface_type = RGB18,
 		.chan = LCDC_CHAN_MAINLCD,
-		.bpp = 16,
-		.lcd_cfg = {
-			.sync = 0, /* hsync and vsync are active low */
-		},
+		.fourcc = V4L2_PIX_FMT_RGB565,
 		.lcd_size_cfg = { /* 7.0 inch */
 			.width = 152,
 			.height = 91,
 		},
 		.board_cfg = {
+			.set_brightness = ecovec24_set_brightness,
+			.get_brightness = ecovec24_get_brightness,
+		},
+		.bl_info = {
+			.name = "sh_mobile_lcdc_bl",
+			.max_brightness = 1,
 		},
 	}
 };
@@ -267,9 +361,6 @@ static struct platform_device lcdc_device = {
 	.resource	= lcdc_resources,
 	.dev		= {
 		.platform_data	= &lcdc_info,
-	},
-	.archdata = {
-		.hwblk_id = HWBLK_LCDC,
 	},
 };
 
@@ -302,9 +393,6 @@ static struct platform_device ceu0_device = {
 	.dev	= {
 		.platform_data	= &sh_mobile_ceu0_info,
 	},
-	.archdata = {
-		.hwblk_id = HWBLK_CEU0,
-	},
 };
 
 /* CEU1 */
@@ -335,9 +423,6 @@ static struct platform_device ceu1_device = {
 	.resource	= ceu1_resources,
 	.dev	= {
 		.platform_data	= &sh_mobile_ceu1_info,
-	},
-	.archdata = {
-		.hwblk_id = HWBLK_CEU1,
 	},
 };
 
@@ -393,9 +478,6 @@ static struct platform_device keysc_device = {
 	.dev	= {
 		.platform_data	= &keysc_info,
 	},
-	.archdata = {
-		.hwblk_id = HWBLK_KEYSC,
-	},
 };
 
 /* TouchScreen */
@@ -435,7 +517,7 @@ static struct i2c_board_info ts_i2c_clients = {
 	.irq		= IRQ0,
 };
 
-#ifdef CONFIG_MFD_SH_MOBILE_SDHI
+#if defined(CONFIG_MMC_SDHI) || defined(CONFIG_MMC_SDHI_MODULE)
 /* SDHI0 */
 static void sdhi0_set_pwr(struct platform_device *pdev, int state)
 {
@@ -446,13 +528,14 @@ static struct sh_mobile_sdhi_info sdhi0_info = {
 	.dma_slave_tx	= SHDMA_SLAVE_SDHI0_TX,
 	.dma_slave_rx	= SHDMA_SLAVE_SDHI0_RX,
 	.set_pwr	= sdhi0_set_pwr,
+	.tmio_caps      = MMC_CAP_SDIO_IRQ | MMC_CAP_POWER_OFF_CARD,
 };
 
 static struct resource sdhi0_resources[] = {
 	[0] = {
 		.name	= "SDHI0",
 		.start  = 0x04ce0000,
-		.end    = 0x04ce01ff,
+		.end    = 0x04ce00ff,
 		.flags  = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -469,12 +552,9 @@ static struct platform_device sdhi0_device = {
 	.dev	= {
 		.platform_data	= &sdhi0_info,
 	},
-	.archdata = {
-		.hwblk_id = HWBLK_SDHI0,
-	},
 };
 
-#if !defined(CONFIG_MMC_SH_MMCIF)
+#if !defined(CONFIG_MMC_SH_MMCIF) && !defined(CONFIG_MMC_SH_MMCIF_MODULE)
 /* SDHI1 */
 static void sdhi1_set_pwr(struct platform_device *pdev, int state)
 {
@@ -484,6 +564,7 @@ static void sdhi1_set_pwr(struct platform_device *pdev, int state)
 static struct sh_mobile_sdhi_info sdhi1_info = {
 	.dma_slave_tx	= SHDMA_SLAVE_SDHI1_TX,
 	.dma_slave_rx	= SHDMA_SLAVE_SDHI1_RX,
+	.tmio_caps      = MMC_CAP_SDIO_IRQ | MMC_CAP_POWER_OFF_CARD,
 	.set_pwr	= sdhi1_set_pwr,
 };
 
@@ -491,7 +572,7 @@ static struct resource sdhi1_resources[] = {
 	[0] = {
 		.name	= "SDHI1",
 		.start  = 0x04cf0000,
-		.end    = 0x04cf01ff,
+		.end    = 0x04cf00ff,
 		.flags  = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -507,9 +588,6 @@ static struct platform_device sdhi1_device = {
 	.id             = 1,
 	.dev	= {
 		.platform_data	= &sdhi1_info,
-	},
-	.archdata = {
-		.hwblk_id = HWBLK_SDHI1,
 	},
 };
 #endif /* CONFIG_MMC_SH_MMCIF */
@@ -576,9 +654,6 @@ static struct platform_device msiof0_device = {
 	},
 	.num_resources	= ARRAY_SIZE(msiof0_resources),
 	.resource	= msiof0_resources,
-	.archdata = {
-		.hwblk_id = HWBLK_MSIOF0,
-	},
 };
 
 #endif
@@ -620,7 +695,6 @@ static struct soc_camera_link tw9910_link = {
 	.bus_id		= 1,
 	.power		= tw9910_power,
 	.board_info	= &i2c_camera[0],
-	.module_name	= "tw9910",
 	.priv		= &tw9910_info,
 };
 
@@ -644,7 +718,6 @@ static struct soc_camera_link mt9t112_link1 = {
 	.power		= mt9t112_power1,
 	.bus_id		= 0,
 	.board_info	= &i2c_camera[1],
-	.module_name	= "mt9t112",
 	.priv		= &mt9t112_info1,
 };
 
@@ -667,7 +740,6 @@ static struct soc_camera_link mt9t112_link2 = {
 	.power		= mt9t112_power2,
 	.bus_id		= 1,
 	.board_info	= &i2c_camera[2],
-	.module_name	= "mt9t112",
 	.priv		= &mt9t112_info2,
 };
 
@@ -696,38 +768,8 @@ static struct platform_device camera_devices[] = {
 };
 
 /* FSI */
-/*
- * FSI-B use external clock which came from da7210.
- * So, we should change parent of fsi
- */
-#define FCLKBCR		0xa415000c
-static void fsimck_init(struct clk *clk)
-{
-	u32 status = __raw_readl(clk->enable_reg);
-
-	/* use external clock */
-	status &= ~0x000000ff;
-	status |= 0x00000080;
-
-	__raw_writel(status, clk->enable_reg);
-}
-
-static struct clk_ops fsimck_clk_ops = {
-	.init = fsimck_init,
-};
-
-static struct clk fsimckb_clk = {
-	.ops		= &fsimck_clk_ops,
-	.enable_reg	= (void __iomem *)FCLKBCR,
-	.rate		= 0, /* unknown */
-};
-
 static struct sh_fsi_platform_info fsi_info = {
-	.portb_flags = SH_FSI_BRS_INV |
-		       SH_FSI_OUT_SLAVE_MODE |
-		       SH_FSI_IN_SLAVE_MODE |
-		       SH_FSI_OFMT(I2S) |
-		       SH_FSI_IFMT(I2S),
+	.portb_flags = SH_FSI_BRS_INV,
 };
 
 static struct resource fsi_resources[] = {
@@ -750,9 +792,6 @@ static struct platform_device fsi_device = {
 	.resource	= fsi_resources,
 	.dev	= {
 		.platform_data	= &fsi_info,
-	},
-	.archdata = {
-		.hwblk_id = HWBLK_SPU, /* FSI needs SPU hwblk */
 	},
 };
 
@@ -793,7 +832,6 @@ static struct sh_vou_pdata sh_vou_pdata = {
 	.flags		= SH_VOU_HSYNC_LOW | SH_VOU_VSYNC_LOW,
 	.board_info	= &ak8813,
 	.i2c_adap	= 0,
-	.module_name	= "ak881x",
 };
 
 static struct resource sh_vou_resources[] = {
@@ -816,12 +854,9 @@ static struct platform_device vou_device = {
 	.dev		= {
 		.platform_data	= &sh_vou_pdata,
 	},
-	.archdata	= {
-		.hwblk_id	= HWBLK_VOU,
-	},
 };
 
-#if defined(CONFIG_MMC_SH_MMCIF)
+#if defined(CONFIG_MMC_SH_MMCIF) || defined(CONFIG_MMC_SH_MMCIF_MODULE)
 /* SH_MMCIF */
 static void mmcif_set_pwr(struct platform_device *pdev, int state)
 {
@@ -879,13 +914,14 @@ static struct platform_device *ecovec_devices[] __initdata = {
 	&sh_eth_device,
 	&usb0_host_device,
 	&usb1_common_device,
+	&usbhs_device,
 	&lcdc_device,
 	&ceu0_device,
 	&ceu1_device,
 	&keysc_device,
-#ifdef CONFIG_MFD_SH_MOBILE_SDHI
+#if defined(CONFIG_MMC_SDHI) || defined(CONFIG_MMC_SDHI_MODULE)
 	&sdhi0_device,
-#if !defined(CONFIG_MMC_SH_MMCIF)
+#if !defined(CONFIG_MMC_SH_MMCIF) && !defined(CONFIG_MMC_SH_MMCIF_MODULE)
 	&sdhi1_device,
 #endif
 #else
@@ -897,7 +933,7 @@ static struct platform_device *ecovec_devices[] __initdata = {
 	&fsi_device,
 	&irda_device,
 	&vou_device,
-#if defined(CONFIG_MMC_SH_MMCIF)
+#if defined(CONFIG_MMC_SH_MMCIF) || defined(CONFIG_MMC_SH_MMCIF_MODULE)
 	&sh_mmcif_device,
 #endif
 };
@@ -939,7 +975,7 @@ static void __init sh_eth_init(struct sh_eth_plat_data *pd)
 		return;
 	}
 
-	/* read MAC address frome EEPROM */
+	/* read MAC address from EEPROM */
 	for (i = 0; i < sizeof(pd->mac_addr); i++) {
 		pd->mac_addr[i] = mac_read(a, 0x10 + i);
 		msleep(10);
@@ -1079,33 +1115,18 @@ static int __init arch_setup(void)
 	if (gpio_get_value(GPIO_PTE6)) {
 		/* DVI */
 		lcdc_info.clock_source			= LCDC_CLK_EXTERNAL;
-		lcdc_info.ch[0].clock_divider		= 1,
-		lcdc_info.ch[0].lcd_cfg.name		= "DVI";
-		lcdc_info.ch[0].lcd_cfg.xres		= 1280;
-		lcdc_info.ch[0].lcd_cfg.yres		= 720;
-		lcdc_info.ch[0].lcd_cfg.left_margin	= 220;
-		lcdc_info.ch[0].lcd_cfg.right_margin	= 110;
-		lcdc_info.ch[0].lcd_cfg.hsync_len	= 40;
-		lcdc_info.ch[0].lcd_cfg.upper_margin	= 20;
-		lcdc_info.ch[0].lcd_cfg.lower_margin	= 5;
-		lcdc_info.ch[0].lcd_cfg.vsync_len	= 5;
+		lcdc_info.ch[0].clock_divider		= 1;
+		lcdc_info.ch[0].lcd_cfg			= ecovec_dvi_modes;
+		lcdc_info.ch[0].num_cfg			= ARRAY_SIZE(ecovec_dvi_modes);
 
 		gpio_set_value(GPIO_PTA2, 1);
 		gpio_set_value(GPIO_PTU1, 1);
 	} else {
 		/* Panel */
-
 		lcdc_info.clock_source			= LCDC_CLK_PERIPHERAL;
-		lcdc_info.ch[0].clock_divider		= 2,
-		lcdc_info.ch[0].lcd_cfg.name		= "Panel";
-		lcdc_info.ch[0].lcd_cfg.xres		= 800;
-		lcdc_info.ch[0].lcd_cfg.yres		= 480;
-		lcdc_info.ch[0].lcd_cfg.left_margin	= 220;
-		lcdc_info.ch[0].lcd_cfg.right_margin	= 110;
-		lcdc_info.ch[0].lcd_cfg.hsync_len	= 70;
-		lcdc_info.ch[0].lcd_cfg.upper_margin	= 20;
-		lcdc_info.ch[0].lcd_cfg.lower_margin	= 5;
-		lcdc_info.ch[0].lcd_cfg.vsync_len	= 5;
+		lcdc_info.ch[0].clock_divider		= 2;
+		lcdc_info.ch[0].lcd_cfg			= ecovec_lcd_modes;
+		lcdc_info.ch[0].num_cfg			= ARRAY_SIZE(ecovec_lcd_modes);
 
 		gpio_set_value(GPIO_PTR1, 1);
 
@@ -1120,7 +1141,7 @@ static int __init arch_setup(void)
 
 		/* enable TouchScreen */
 		i2c_register_board_info(0, &ts_i2c_clients, 1);
-		set_irq_type(IRQ0, IRQ_TYPE_LEVEL_LOW);
+		irq_set_irq_type(IRQ0, IRQ_TYPE_LEVEL_LOW);
 	}
 
 	/* enable CEU0 */
@@ -1180,7 +1201,7 @@ static int __init arch_setup(void)
 	gpio_direction_input(GPIO_PTR5);
 	gpio_direction_input(GPIO_PTR6);
 
-#ifdef CONFIG_MFD_SH_MOBILE_SDHI
+#if defined(CONFIG_MMC_SDHI) || defined(CONFIG_MMC_SDHI_MODULE)
 	/* enable SDHI0 on CN11 (needs DS2.4 set to ON) */
 	gpio_request(GPIO_FN_SDHI0CD,  NULL);
 	gpio_request(GPIO_FN_SDHI0WP,  NULL);
@@ -1193,7 +1214,7 @@ static int __init arch_setup(void)
 	gpio_request(GPIO_PTB6, NULL);
 	gpio_direction_output(GPIO_PTB6, 0);
 
-#if !defined(CONFIG_MMC_SH_MMCIF)
+#if !defined(CONFIG_MMC_SH_MMCIF) && !defined(CONFIG_MMC_SH_MMCIF_MODULE)
 	/* enable SDHI1 on CN12 (needs DS2.6,7 set to ON,OFF) */
 	gpio_request(GPIO_FN_SDHI1CD,  NULL);
 	gpio_request(GPIO_FN_SDHI1WP,  NULL);
@@ -1248,18 +1269,18 @@ static int __init arch_setup(void)
 
 	/* set SPU2 clock to 83.4 MHz */
 	clk = clk_get(NULL, "spu_clk");
-	if (clk) {
+	if (!IS_ERR(clk)) {
 		clk_set_rate(clk, clk_round_rate(clk, 83333333));
 		clk_put(clk);
 	}
 
 	/* change parent of FSI B */
 	clk = clk_get(NULL, "fsib_clk");
-	if (clk) {
-		clk_register(&fsimckb_clk);
-		clk_set_parent(clk, &fsimckb_clk);
-		clk_set_rate(clk, 11000);
-		clk_set_rate(&fsimckb_clk, 11000);
+	if (!IS_ERR(clk)) {
+		/* 48kHz dummy clock was used to make sure 1/1 divide */
+		clk_set_rate(&sh7724_fsimckb_clk, 48000);
+		clk_set_parent(clk, &sh7724_fsimckb_clk);
+		clk_set_rate(clk, 48000);
 		clk_put(clk);
 	}
 
@@ -1273,7 +1294,7 @@ static int __init arch_setup(void)
 
 	/* set VPU clock to 166 MHz */
 	clk = clk_get(NULL, "vpu_clk");
-	if (clk) {
+	if (!IS_ERR(clk)) {
 		clk_set_rate(clk, clk_round_rate(clk, 166000000));
 		clk_put(clk);
 	}
@@ -1284,7 +1305,7 @@ static int __init arch_setup(void)
 	gpio_request(GPIO_PTU5, NULL);
 	gpio_direction_output(GPIO_PTU5, 0);
 
-#if defined(CONFIG_MMC_SH_MMCIF)
+#if defined(CONFIG_MMC_SH_MMCIF) || defined(CONFIG_MMC_SH_MMCIF_MODULE)
 	/* enable MMCIF (needs DS2.6,7 set to OFF,ON) */
 	gpio_request(GPIO_FN_MMC_D7, NULL);
 	gpio_request(GPIO_FN_MMC_D6, NULL);
@@ -1310,6 +1331,7 @@ static int __init arch_setup(void)
 	i2c_register_board_info(1, i2c1_devices,
 				ARRAY_SIZE(i2c1_devices));
 
+#if defined(CONFIG_VIDEO_SH_VOU) || defined(CONFIG_VIDEO_SH_VOU_MODULE)
 	/* VOU */
 	gpio_request(GPIO_FN_DV_D15, NULL);
 	gpio_request(GPIO_FN_DV_D14, NULL);
@@ -1341,6 +1363,7 @@ static int __init arch_setup(void)
 
 	/* Remove reset */
 	gpio_set_value(GPIO_PTG4, 1);
+#endif
 
 	return platform_add_devices(ecovec_devices,
 				    ARRAY_SIZE(ecovec_devices));

@@ -22,7 +22,6 @@
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
-#include <linux/i2c-id.h>
 #include <linux/slab.h>
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-device.h>
@@ -119,9 +118,11 @@ static int tef6862_s_frequency(struct v4l2_subdev *sd, struct v4l2_frequency *f)
 	i2cmsg[2] = pll & 0xff;
 
 	err = i2c_master_send(client, i2cmsg, sizeof(i2cmsg));
-	if (!err)
-		state->freq = f->frequency;
-	return err;
+	if (err != sizeof(i2cmsg))
+		return err < 0 ? err : -EIO;
+
+	state->freq = f->frequency;
+	return 0;
 }
 
 static int tef6862_g_frequency(struct v4l2_subdev *sd, struct v4l2_frequency *f)
@@ -177,7 +178,7 @@ static int __devinit tef6862_probe(struct i2c_client *client,
 	v4l_info(client, "chip found @ 0x%02x (%s)\n",
 			client->addr << 1, client->adapter->name);
 
-	state = kmalloc(sizeof(struct tef6862_state), GFP_KERNEL);
+	state = kzalloc(sizeof(struct tef6862_state), GFP_KERNEL);
 	if (state == NULL)
 		return -ENOMEM;
 	state->freq = TEF6862_LO_FREQ;

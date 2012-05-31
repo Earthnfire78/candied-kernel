@@ -21,6 +21,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/gfp.h>
 #include <linux/usb.h>
@@ -97,8 +98,9 @@ static void tx_complete(struct urb *req)
 	struct sk_buff *skb = req->context;
 	struct net_device *dev = skb->dev;
 	struct usbpn_dev *pnd = netdev_priv(dev);
+	int status = req->status;
 
-	switch (req->status) {
+	switch (status) {
 	case 0:
 		dev->stats.tx_bytes += skb->len;
 		break;
@@ -109,7 +111,7 @@ static void tx_complete(struct urb *req)
 		dev->stats.tx_aborted_errors++;
 	default:
 		dev->stats.tx_errors++;
-		dev_dbg(&dev->dev, "TX error (%d)\n", req->status);
+		dev_dbg(&dev->dev, "TX error (%d)\n", status);
 	}
 	dev->stats.tx_packets++;
 
@@ -128,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
 	struct page *page;
 	int err;
 
-	page = __netdev_alloc_page(dev, gfp_flags);
+	page = alloc_page(gfp_flags);
 	if (!page)
 		return -ENOMEM;
 
@@ -138,7 +140,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
 	err = usb_submit_urb(req, gfp_flags);
 	if (unlikely(err)) {
 		dev_dbg(&dev->dev, "RX submit error (%d)\n", err);
-		netdev_free_page(dev, page);
+		put_page(page);
 	}
 	return err;
 }
@@ -150,8 +152,9 @@ static void rx_complete(struct urb *req)
 	struct page *page = virt_to_page(req->transfer_buffer);
 	struct sk_buff *skb;
 	unsigned long flags;
+	int status = req->status;
 
-	switch (req->status) {
+	switch (status) {
 	case 0:
 		spin_lock_irqsave(&pnd->rx_lock, flags);
 		skb = pnd->rx_skb;
@@ -205,9 +208,9 @@ static void rx_complete(struct urb *req)
 	dev->stats.rx_errors++;
 resubmit:
 	if (page)
-		netdev_free_page(dev, page);
+		put_page(page);
 	if (req)
-		rx_submit(pnd, req, GFP_ATOMIC);
+		rx_submit(pnd, req, GFP_ATOMIC | __GFP_COLD);
 }
 
 static int usbpn_close(struct net_device *dev);
@@ -226,7 +229,7 @@ static int usbpn_open(struct net_device *dev)
 	for (i = 0; i < rxq_size; i++) {
 		struct urb *req = usb_alloc_urb(0, GFP_KERNEL);
 
-		if (!req || rx_submit(pnd, req, GFP_KERNEL)) {
+		if (!req || rx_submit(pnd, req, GFP_KERNEL | __GFP_COLD)) {
 			usbpn_close(dev);
 			return -ENOMEM;
 		}
@@ -387,7 +390,6 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
 
 	pnd = netdev_priv(dev);
 	SET_NETDEV_DEV(dev, &intf->dev);
-	netif_stop_queue(dev);
 
 	pnd->dev = dev;
 	pnd->usb = usb_get_dev(usbdev);
@@ -455,18 +457,7 @@ static struct usb_driver usbpn_driver = {
 	.id_table =	usbpn_ids,
 };
 
-static int __init usbpn_init(void)
-{
-	return usb_register(&usbpn_driver);
-}
-
-static void __exit usbpn_exit(void)
-{
-	usb_deregister(&usbpn_driver);
-}
-
-module_init(usbpn_init);
-module_exit(usbpn_exit);
+module_usb_driver(usbpn_driver);
 
 MODULE_AUTHOR("Remi Denis-Courmont");
 MODULE_DESCRIPTION("USB CDC Phonet host interface");

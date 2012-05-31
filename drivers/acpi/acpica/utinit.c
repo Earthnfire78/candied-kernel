@@ -5,7 +5,7 @@
  *****************************************************************************/
 
 /*
- * Copyright (C) 2000 - 2010, Intel Corp.
+ * Copyright (C) 2000 - 2012, Intel Corp.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,6 +92,7 @@ static void acpi_ut_terminate(void)
 		gpe_xrupt_info = next_gpe_xrupt_info;
 	}
 
+	acpi_ut_delete_address_lists();
 	return_VOID;
 }
 
@@ -117,6 +118,10 @@ void acpi_ut_subsystem_shutdown(void)
 	/* Close the acpi_event Handling */
 
 	acpi_ev_terminate();
+
+	/* Delete any dynamic _OSI interfaces */
+
+	acpi_ut_interface_terminate();
 #endif
 
 	/* Close the Namespace */

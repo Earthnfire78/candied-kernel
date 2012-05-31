@@ -37,6 +37,7 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 #include <linux/ftrace.h>
+#include <linux/cpuidle.h>
 
 #include <asm/pgtable.h>
 #include <asm/system.h>
@@ -50,37 +51,24 @@
 #include <asm/idle.h>
 #include <asm/syscalls.h>
 #include <asm/debugreg.h>
+#include <asm/nmi.h>
 
 asmlinkage extern void ret_from_fork(void);
 
 DEFINE_PER_CPU(unsigned long, old_rsp);
 static DEFINE_PER_CPU(unsigned char, is_idle);
 
-static ATOMIC_NOTIFIER_HEAD(idle_notifier);
-
-void idle_notifier_register(struct notifier_block *n)
-{
-	atomic_notifier_chain_register(&idle_notifier, n);
-}
-EXPORT_SYMBOL_GPL(idle_notifier_register);
-
-void idle_notifier_unregister(struct notifier_block *n)
-{
-	atomic_notifier_chain_unregister(&idle_notifier, n);
-}
-EXPORT_SYMBOL_GPL(idle_notifier_unregister);
-
 void enter_idle(void)
 {
 	percpu_write(is_idle, 1);
-	atomic_notifier_call_chain(&idle_notifier, IDLE_START, NULL);
+	idle_notifier_call_chain(IDLE_START);
 }
 
 static void __exit_idle(void)
 {
 	if (x86_test_and_clear_bit_percpu(0, is_idle) == 0)
 		return;
-	atomic_notifier_call_chain(&idle_notifier, IDLE_END, NULL);
+	idle_notifier_call_chain(IDLE_END);
 }
 
 /* Called from interrupts to signify idle end */
@@ -120,7 +108,7 @@ void cpu_idle(void)
 
 	/* endless idle loop with no priority at all */
 	while (1) {
-		tick_nohz_stop_sched_tick(1);
+		tick_nohz_idle_enter();
 		while (!need_resched()) {
 
 			rmb();
@@ -132,19 +120,28 @@ void cpu_idle(void)
 			 * from here on, until they go to idle.
 			 * Otherwise, idle callbacks can misfire.
 			 */
+			local_touch_nmi();
 			local_irq_disable();
 			enter_idle();
 			/* Don't trace irqs off for idle */
 			stop_critical_timings();
-			pm_idle();
+
+			/* enter_idle() needs rcu for notifiers */
+			rcu_idle_enter();
+
+			if (cpuidle_idle_call())
+				pm_idle();
+
+			rcu_idle_exit();
 			start_critical_timings();
+
 			/* In many cases the interrupt that ended idle
 			   has already called exit_idle. But some idle
 			   loops can be woken up without interrupt. */
 			__exit_idle();
 		}
 
-		tick_nohz_restart_sched_tick();
+		tick_nohz_idle_exit();
 		preempt_enable_no_resched();
 		schedule();
 		preempt_disable();
@@ -275,6 +272,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
 
 	set_tsk_thread_flag(p, TIF_FORK);
 
+	p->fpu_counter = 0;
 	p->thread.io_bitmap_ptr = NULL;
 
 	savesegment(gs, p->thread.gsindex);
@@ -288,13 +286,12 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
 	memset(p->thread.ptrace_bps, 0, sizeof(p->thread.ptrace_bps));
 
 	if (unlikely(test_tsk_thread_flag(me, TIF_IO_BITMAP))) {
-		p->thread.io_bitmap_ptr = kmalloc(IO_BITMAP_BYTES, GFP_KERNEL);
+		p->thread.io_bitmap_ptr = kmemdup(me->thread.io_bitmap_ptr,
+						  IO_BITMAP_BYTES, GFP_KERNEL);
 		if (!p->thread.io_bitmap_ptr) {
 			p->thread.io_bitmap_max = 0;
 			return -ENOMEM;
 		}
-		memcpy(p->thread.io_bitmap_ptr, me->thread.io_bitmap_ptr,
-				IO_BITMAP_BYTES);
 		set_tsk_thread_flag(p, TIF_IO_BITMAP);
 	}
 
@@ -337,7 +334,6 @@ start_thread_common(struct pt_regs *regs, unsigned long new_ip,
 	regs->cs		= _cs;
 	regs->ss		= _ss;
 	regs->flags		= X86_EFLAGS_IF;
-	set_fs(USER_DS);
 	/*
 	 * Free the old FP and other extended state
 	 */
@@ -377,18 +373,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 	int cpu = smp_processor_id();
 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
 	unsigned fsindex, gsindex;
-	bool preload_fpu;
+	fpu_switch_t fpu;
 
-	/*
-	 * If the task has used fpu the last 5 timeslices, just do a full
-	 * restore of the math state immediately to avoid the trap; the
-	 * chances of needing FPU soon are obviously high now
-	 */
-	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
-
-	/* we're going to use this soon, after a few expensive things */
-	if (preload_fpu)
-		prefetch(next->fpu.state);
+	fpu = switch_fpu_prepare(prev_p, next_p, cpu);
 
 	/*
 	 * Reload esp0, LDT and the page table pointer:
@@ -417,13 +404,6 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 	savesegment(gs, gsindex);
 
 	load_TLS(next, cpu);
-
-	/* Must be after DS reload */
-	unlazy_fpu(prev_p);
-
-	/* Make sure cpu is ready for new context */
-	if (preload_fpu)
-		clts();
 
 	/*
 	 * Leave lazy mode, flushing any hypercalls made here.
@@ -465,6 +445,8 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 		wrmsrl(MSR_KERNEL_GS_BASE, next->gs);
 	prev->gsindex = gsindex;
 
+	switch_fpu_finish(next_p, fpu);
+
 	/*
 	 * Switch the PDA and FPU contexts.
 	 */
@@ -483,13 +465,6 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 		     task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV))
 		__switch_to_xtra(prev_p, next_p, tss);
 
-	/*
-	 * Preload the FPU context, now that we've determined that the
-	 * task is likely to be using it. 
-	 */
-	if (preload_fpu)
-		__math_state_restore();
-
 	return prev_p;
 }
 
@@ -499,6 +474,10 @@ void set_personality_64bit(void)
 
 	/* Make sure to be in 64bit mode */
 	clear_thread_flag(TIF_IA32);
+
+	/* Ensure the corresponding mm is not marked. */
+	if (current->mm)
+		current->mm->context.ia32_compat = 0;
 
 	/* TBD: overwrites user setup. Should have two bits.
 	   But 64bit processes have always behaved this way,
@@ -514,6 +493,10 @@ void set_personality_ia32(void)
 	/* Make sure to be in 32bit mode */
 	set_thread_flag(TIF_IA32);
 	current->personality |= force_personality32;
+
+	/* Mark the associated mm as containing 32-bit tasks. */
+	if (current->mm)
+		current->mm->context.ia32_compat = 1;
 
 	/* Prepare the first "return" to user space */
 	current_thread_info()->status |= TS_COMPAT;

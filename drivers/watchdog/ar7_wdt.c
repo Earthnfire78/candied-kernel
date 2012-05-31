@@ -70,8 +70,8 @@ struct ar7_wdt {
 };
 
 static unsigned long wdt_is_open;
-static spinlock_t wdt_lock;
 static unsigned expect_close;
+static DEFINE_SPINLOCK(wdt_lock);
 
 /* XXX currently fixed, allows max margin ~68.72 secs */
 #define prescale_value 0xffff
@@ -267,6 +267,7 @@ static const struct file_operations ar7_wdt_fops = {
 	.unlocked_ioctl	= ar7_wdt_ioctl,
 	.open		= ar7_wdt_open,
 	.release	= ar7_wdt_release,
+	.llseek		= no_llseek,
 };
 
 static struct miscdevice ar7_wdt_miscdev = {
@@ -278,8 +279,6 @@ static struct miscdevice ar7_wdt_miscdev = {
 static int __devinit ar7_wdt_probe(struct platform_device *pdev)
 {
 	int rc;
-
-	spin_lock_init(&wdt_lock);
 
 	ar7_regs_wdt =
 		platform_get_resource_byname(pdev, IORESOURCE_MEM, "regs");
@@ -354,15 +353,4 @@ static struct platform_driver ar7_wdt_driver = {
 	},
 };
 
-static int __init ar7_wdt_init(void)
-{
-	return platform_driver_register(&ar7_wdt_driver);
-}
-
-static void __exit ar7_wdt_cleanup(void)
-{
-	platform_driver_unregister(&ar7_wdt_driver);
-}
-
-module_init(ar7_wdt_init);
-module_exit(ar7_wdt_cleanup);
+module_platform_driver(ar7_wdt_driver);

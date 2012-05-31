@@ -62,7 +62,9 @@ extern const char raid6_empty_zero_page[PAGE_SIZE];
 #define disable_kernel_altivec()
 
 #define EXPORT_SYMBOL(sym)
+#define EXPORT_SYMBOL_GPL(sym)
 #define MODULE_LICENSE(licence)
+#define MODULE_DESCRIPTION(desc)
 #define subsys_initcall(x)
 #define module_exit(x)
 #endif /* __KERNEL__ */
@@ -130,7 +132,7 @@ void raid6_dual_recov(int disks, size_t bytes, int faila, int failb,
 						     PROT_READ|PROT_WRITE,   \
 						     MAP_PRIVATE|MAP_ANONYMOUS,\
 						     0, 0))
-# define free_pages(x, y)	munmap((void *)(x), (y)*PAGE_SIZE)
+# define free_pages(x, y)	munmap((void *)(x), PAGE_SIZE << (y))
 
 static inline void cpu_relax(void)
 {

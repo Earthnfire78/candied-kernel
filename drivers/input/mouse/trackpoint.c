@@ -89,10 +89,12 @@ static ssize_t trackpoint_set_int_attr(struct psmouse *psmouse, void *data,
 	struct trackpoint_data *tp = psmouse->private;
 	struct trackpoint_attr_data *attr = data;
 	unsigned char *field = (unsigned char *)((char *)tp + attr->field_offset);
-	unsigned long value;
+	unsigned char value;
+	int err;
 
-	if (strict_strtoul(buf, 10, &value) || value > 255)
-		return -EINVAL;
+	err = kstrtou8(buf, 10, &value);
+	if (err)
+		return err;
 
 	*field = value;
 	trackpoint_write(&psmouse->ps2dev, attr->command, value);
@@ -115,9 +117,14 @@ static ssize_t trackpoint_set_bit_attr(struct psmouse *psmouse, void *data,
 	struct trackpoint_data *tp = psmouse->private;
 	struct trackpoint_attr_data *attr = data;
 	unsigned char *field = (unsigned char *)((char *)tp + attr->field_offset);
-	unsigned long value;
+	unsigned int value;
+	int err;
 
-	if (strict_strtoul(buf, 10, &value) || value > 1)
+	err = kstrtouint(buf, 10, &value);
+	if (err)
+		return err;
+
+	if (value > 1)
 		return -EINVAL;
 
 	if (attr->inverted)
@@ -303,7 +310,7 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
 
 	psmouse->private = kzalloc(sizeof(struct trackpoint_data), GFP_KERNEL);
 	if (!psmouse->private)
-		return -1;
+		return -ENOMEM;
 
 	psmouse->vendor = "IBM";
 	psmouse->name = "TrackPoint";

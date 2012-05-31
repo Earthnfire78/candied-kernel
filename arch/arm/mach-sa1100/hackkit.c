@@ -195,11 +195,10 @@ static void __init hackkit_init(void)
  */
 
 MACHINE_START(HACKKIT, "HackKit Cpu Board")
-	.phys_io	= 0x80000000,
-	.io_pg_offst	= ((0xf8000000) >> 18) & 0xfffc,
-	.boot_params	= 0xc0000100,
+	.atag_offset	= 0x100,
 	.map_io		= hackkit_map_io,
 	.init_irq	= sa1100_init_irq,
 	.timer		= &sa1100_timer,
 	.init_machine	= hackkit_init,
+	.restart	= sa11x0_restart,
 MACHINE_END

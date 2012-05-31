@@ -40,7 +40,7 @@ static char *revision = "$Revision: 1.1.2.2 $";
 
 /* ------------------------------------------------------------- */
 
-static int suppress_pollack;
+static bool suppress_pollack;
 
 static struct pci_device_id c4_pci_tbl[] = {
 	{ PCI_VENDOR_ID_DEC, PCI_DEVICE_ID_DEC_21285, PCI_VENDOR_ID_AVM, PCI_DEVICE_ID_AVM_C4, 0, 0, (unsigned long)4 },
@@ -1273,6 +1273,7 @@ static int __devinit c4_probe(struct pci_dev *dev,
 	if (retval != 0) {
 		printk(KERN_ERR "c4: no AVM-C%d at i/o %#x, irq %d detected, mem %#x\n",
 		       nr, param.port, param.irq, param.membase);
+		pci_disable_device(dev);
 		return -ENODEV;
 	}
 	return 0;

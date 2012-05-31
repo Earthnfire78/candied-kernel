@@ -690,7 +690,7 @@ static int pvscsi_queue_ring(struct pvscsi_adapter *adapter,
 	return 0;
 }
 
-static int pvscsi_queue(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+static int pvscsi_queue_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
 {
 	struct Scsi_Host *host = cmd->device->host;
 	struct pvscsi_adapter *adapter = shost_priv(host);
@@ -718,6 +718,8 @@ static int pvscsi_queue(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
 
 	return 0;
 }
+
+static DEF_SCSI_QCMD(pvscsi_queue)
 
 static int pvscsi_abort(struct scsi_cmnd *cmd)
 {
@@ -1142,7 +1144,7 @@ static void pvscsi_release_resources(struct pvscsi_adapter *adapter)
  *
  * These are statically allocated.  Trying to be clever was not worth it.
  *
- * Dynamic allocation can fail, and we can't go deeep into the memory
+ * Dynamic allocation can fail, and we can't go deep into the memory
  * allocator, since we're a SCSI driver, and trying too hard to allocate
  * memory might generate disk I/O.  We also don't want to fail disk I/O
  * in that case because we can't get an allocation - the I/O could be

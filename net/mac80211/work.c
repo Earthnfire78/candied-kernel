@@ -25,12 +25,12 @@
 
 #include "ieee80211_i.h"
 #include "rate.h"
+#include "driver-ops.h"
 
 #define IEEE80211_AUTH_TIMEOUT (HZ / 5)
 #define IEEE80211_AUTH_MAX_TRIES 3
 #define IEEE80211_ASSOC_TIMEOUT (HZ / 5)
 #define IEEE80211_ASSOC_MAX_TRIES 3
-#define IEEE80211_MAX_PROBE_TRIES 5
 
 enum work_action {
 	WORK_ACT_MISMATCH,
@@ -43,7 +43,7 @@ enum work_action {
 /* utils */
 static inline void ASSERT_WORK_MTX(struct ieee80211_local *local)
 {
-	WARN_ON(!mutex_is_locked(&local->work_mtx));
+	lockdep_assert_held(&local->mtx);
 }
 
 /*
@@ -66,17 +66,9 @@ static void run_again(struct ieee80211_local *local,
 		mod_timer(&local->work_timer, timeout);
 }
 
-static void work_free_rcu(struct rcu_head *head)
-{
-	struct ieee80211_work *wk =
-		container_of(head, struct ieee80211_work, rcu_head);
-
-	kfree(wk);
-}
-
 void free_work(struct ieee80211_work *wk)
 {
-	call_rcu(&wk->rcu_head, work_free_rcu);
+	kfree_rcu(wk, rcu_head);
 }
 
 static int ieee80211_compatible_rates(const u8 *supp_rates, int supp_rates_len,
@@ -102,7 +94,8 @@ static int ieee80211_compatible_rates(const u8 *supp_rates, int supp_rates_len,
 
 /* frame sending functions */
 
-static void ieee80211_add_ht_ie(struct sk_buff *skb, const u8 *ht_info_ie,
+static void ieee80211_add_ht_ie(struct ieee80211_sub_if_data *sdata,
+				struct sk_buff *skb, const u8 *ht_info_ie,
 				struct ieee80211_supported_band *sband,
 				struct ieee80211_channel *channel,
 				enum ieee80211_smps_mode smps)
@@ -110,8 +103,10 @@ static void ieee80211_add_ht_ie(struct sk_buff *skb, const u8 *ht_info_ie,
 	struct ieee80211_ht_info *ht_info;
 	u8 *pos;
 	u32 flags = channel->flags;
-	u16 cap = sband->ht_cap.cap;
-	__le16 tmp;
+	u16 cap;
+	struct ieee80211_sta_ht_cap ht_cap;
+
+	BUILD_BUG_ON(sizeof(ht_cap) != sizeof(sband->ht_cap));
 
 	if (!sband->ht_cap.ht_supported)
 		return;
@@ -122,15 +117,13 @@ static void ieee80211_add_ht_ie(struct sk_buff *skb, const u8 *ht_info_ie,
 	if (ht_info_ie[1] < sizeof(struct ieee80211_ht_info))
 		return;
 
+	memcpy(&ht_cap, &sband->ht_cap, sizeof(ht_cap));
+	ieee80211_apply_htcap_overrides(sdata, &ht_cap);
+
 	ht_info = (struct ieee80211_ht_info *)(ht_info_ie + 2);
 
 	/* determine capability flags */
-
-	if (ieee80211_disable_40mhz_24ghz &&
-	    sband->band == IEEE80211_BAND_2GHZ) {
-		cap &= ~IEEE80211_HT_CAP_SUP_WIDTH_20_40;
-		cap &= ~IEEE80211_HT_CAP_SGI_40;
-	}
+	cap = ht_cap.cap;
 
 	switch (ht_info->ht_param & IEEE80211_HT_PARAM_CHA_SEC_OFFSET) {
 	case IEEE80211_HT_PARAM_CHA_SEC_ABOVE:
@@ -168,34 +161,8 @@ static void ieee80211_add_ht_ie(struct sk_buff *skb, const u8 *ht_info_ie,
 	}
 
 	/* reserve and fill IE */
-
 	pos = skb_put(skb, sizeof(struct ieee80211_ht_cap) + 2);
-	*pos++ = WLAN_EID_HT_CAPABILITY;
-	*pos++ = sizeof(struct ieee80211_ht_cap);
-	memset(pos, 0, sizeof(struct ieee80211_ht_cap));
-
-	/* capability flags */
-	tmp = cpu_to_le16(cap);
-	memcpy(pos, &tmp, sizeof(u16));
-	pos += sizeof(u16);
-
-	/* AMPDU parameters */
-	*pos++ = sband->ht_cap.ampdu_factor |
-		 (sband->ht_cap.ampdu_density <<
-			IEEE80211_HT_AMPDU_PARM_DENSITY_SHIFT);
-
-	/* MCS set */
-	memcpy(pos, &sband->ht_cap.mcs, sizeof(sband->ht_cap.mcs));
-	pos += sizeof(sband->ht_cap.mcs);
-
-	/* extended capabilities */
-	pos += sizeof(__le16);
-
-	/* BF capabilities */
-	pos += sizeof(__le32);
-
-	/* antenna selection */
-	pos += sizeof(u8);
+	ieee80211_ie_build_ht_cap(pos, &ht_cap, cap);
 }
 
 static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
@@ -205,9 +172,8 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *mgmt;
 	u8 *pos, qos_info;
-	const u8 *ies;
 	size_t offset = 0, noffset;
-	int i, len, count, rates_len, supp_rates_len;
+	int i, count, rates_len, supp_rates_len;
 	u16 capab;
 	struct ieee80211_supported_band *sband;
 	u32 rates = 0;
@@ -244,11 +210,9 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
 			wk->ie_len + /* extra IEs */
 			9, /* WMM */
 			GFP_KERNEL);
-	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for assoc "
-		       "frame\n", sdata->name);
+	if (!skb)
 		return;
-	}
+
 	skb_reserve(skb, local->hw.extra_tx_headroom);
 
 	capab = WLAN_CAPABILITY_ESS;
@@ -292,7 +256,7 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
 	}
 
 	/* SSID */
-	ies = pos = skb_put(skb, 2 + wk->assoc.ssid_len);
+	pos = skb_put(skb, 2 + wk->assoc.ssid_len);
 	*pos++ = WLAN_EID_SSID;
 	*pos++ = wk->assoc.ssid_len;
 	memcpy(pos, wk->assoc.ssid, wk->assoc.ssid_len);
@@ -302,7 +266,6 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
 	if (supp_rates_len > 8)
 		supp_rates_len = 8;
 
-	len = sband->n_bitrates;
 	pos = skb_put(skb, supp_rates_len + 2);
 	*pos++ = WLAN_EID_SUPP_RATES;
 	*pos++ = supp_rates_len;
@@ -374,7 +337,7 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
 
 	if (wk->assoc.use_11n && wk->assoc.wmm_used &&
 	    local->hw.queues >= 4)
-		ieee80211_add_ht_ie(skb, wk->assoc.ht_information_ie,
+		ieee80211_add_ht_ie(sdata, skb, wk->assoc.ht_information_ie,
 				    sband, wk->chan, wk->assoc.smps);
 
 	/* if present, add any custom non-vendor IEs that go after HT */
@@ -444,6 +407,14 @@ ieee80211_direct_probe(struct ieee80211_work *wk)
 	struct ieee80211_sub_if_data *sdata = wk->sdata;
 	struct ieee80211_local *local = sdata->local;
 
+	if (!wk->probe_auth.synced) {
+		int ret = drv_tx_sync(local, sdata, wk->filter_ta,
+				      IEEE80211_TX_SYNC_AUTH);
+		if (ret)
+			return WORK_ACT_TIMEOUT;
+	}
+	wk->probe_auth.synced = true;
+
 	wk->probe_auth.tries++;
 	if (wk->probe_auth.tries > IEEE80211_AUTH_MAX_TRIES) {
 		printk(KERN_DEBUG "%s: direct probe to %pM timed out\n",
@@ -458,15 +429,17 @@ ieee80211_direct_probe(struct ieee80211_work *wk)
 		return WORK_ACT_TIMEOUT;
 	}
 
-	printk(KERN_DEBUG "%s: direct probe to %pM (try %d)\n",
-			sdata->name, wk->filter_ta, wk->probe_auth.tries);
+	printk(KERN_DEBUG "%s: direct probe to %pM (try %d/%i)\n",
+	       sdata->name, wk->filter_ta, wk->probe_auth.tries,
+	       IEEE80211_AUTH_MAX_TRIES);
 
 	/*
 	 * Direct probe is sent to broadcast address as some APs
 	 * will not answer to direct packet in unassociated state.
 	 */
 	ieee80211_send_probe_req(sdata, NULL, wk->probe_auth.ssid,
-				 wk->probe_auth.ssid_len, NULL, 0);
+				 wk->probe_auth.ssid_len, NULL, 0,
+				 (u32) -1, true, false);
 
 	wk->timeout = jiffies + IEEE80211_AUTH_TIMEOUT;
 	run_again(local, wk->timeout);
@@ -480,6 +453,14 @@ ieee80211_authenticate(struct ieee80211_work *wk)
 {
 	struct ieee80211_sub_if_data *sdata = wk->sdata;
 	struct ieee80211_local *local = sdata->local;
+
+	if (!wk->probe_auth.synced) {
+		int ret = drv_tx_sync(local, sdata, wk->filter_ta,
+				      IEEE80211_TX_SYNC_AUTH);
+		if (ret)
+			return WORK_ACT_TIMEOUT;
+	}
+	wk->probe_auth.synced = true;
 
 	wk->probe_auth.tries++;
 	if (wk->probe_auth.tries > IEEE80211_AUTH_MAX_TRIES) {
@@ -513,6 +494,14 @@ ieee80211_associate(struct ieee80211_work *wk)
 {
 	struct ieee80211_sub_if_data *sdata = wk->sdata;
 	struct ieee80211_local *local = sdata->local;
+
+	if (!wk->assoc.synced) {
+		int ret = drv_tx_sync(local, sdata, wk->filter_ta,
+				      IEEE80211_TX_SYNC_ASSOC);
+		if (ret)
+			return WORK_ACT_TIMEOUT;
+	}
+	wk->assoc.synced = true;
 
 	wk->assoc.tries++;
 	if (wk->assoc.tries > IEEE80211_ASSOC_MAX_TRIES) {
@@ -558,6 +547,41 @@ ieee80211_remain_on_channel_timeout(struct ieee80211_work *wk)
 	}
 
 	return WORK_ACT_TIMEOUT;
+}
+
+static enum work_action __must_check
+ieee80211_offchannel_tx(struct ieee80211_work *wk)
+{
+	if (!wk->started) {
+		wk->timeout = jiffies + msecs_to_jiffies(wk->offchan_tx.wait);
+
+		/*
+		 * After this, offchan_tx.frame remains but now is no
+		 * longer a valid pointer -- we still need it as the
+		 * cookie for canceling this work/status matching.
+		 */
+		ieee80211_tx_skb(wk->sdata, wk->offchan_tx.frame);
+
+		return WORK_ACT_NONE;
+	}
+
+	return WORK_ACT_TIMEOUT;
+}
+
+static enum work_action __must_check
+ieee80211_assoc_beacon_wait(struct ieee80211_work *wk)
+{
+	if (wk->started)
+		return WORK_ACT_TIMEOUT;
+
+	/*
+	 * Wait up to one beacon interval ...
+	 * should this be more if we miss one?
+	 */
+	printk(KERN_DEBUG "%s: waiting for beacon from %pM\n",
+	       wk->sdata->name, wk->filter_ta);
+	wk->timeout = TU_TO_EXP_TIME(wk->assoc.bss->beacon_interval);
+	return WORK_ACT_NONE;
 }
 
 static void ieee80211_auth_challenge(struct ieee80211_work *wk,
@@ -709,6 +733,25 @@ ieee80211_rx_mgmt_probe_resp(struct ieee80211_work *wk,
 	return WORK_ACT_DONE;
 }
 
+static enum work_action __must_check
+ieee80211_rx_mgmt_beacon(struct ieee80211_work *wk,
+			 struct ieee80211_mgmt *mgmt, size_t len)
+{
+	struct ieee80211_sub_if_data *sdata = wk->sdata;
+	struct ieee80211_local *local = sdata->local;
+
+	ASSERT_WORK_MTX(local);
+
+	if (wk->type != IEEE80211_WORK_ASSOC_BEACON_WAIT)
+		return WORK_ACT_MISMATCH;
+
+	if (len < 24 + 12)
+		return WORK_ACT_NONE;
+
+	printk(KERN_DEBUG "%s: beacon received\n", sdata->name);
+	return WORK_ACT_DONE;
+}
+
 static void ieee80211_work_rx_queued_mgmt(struct ieee80211_local *local,
 					  struct sk_buff *skb)
 {
@@ -722,7 +765,7 @@ static void ieee80211_work_rx_queued_mgmt(struct ieee80211_local *local,
 	mgmt = (struct ieee80211_mgmt *) skb->data;
 	fc = le16_to_cpu(mgmt->frame_control);
 
-	mutex_lock(&local->work_mtx);
+	mutex_lock(&local->mtx);
 
 	list_for_each_entry(wk, &local->work_list, list) {
 		const u8 *bssid = NULL;
@@ -731,6 +774,7 @@ static void ieee80211_work_rx_queued_mgmt(struct ieee80211_local *local,
 		case IEEE80211_WORK_DIRECT_PROBE:
 		case IEEE80211_WORK_AUTH:
 		case IEEE80211_WORK_ASSOC:
+		case IEEE80211_WORK_ASSOC_BEACON_WAIT:
 			bssid = wk->filter_ta;
 			break;
 		default:
@@ -745,6 +789,9 @@ static void ieee80211_work_rx_queued_mgmt(struct ieee80211_local *local,
 			continue;
 
 		switch (fc & IEEE80211_FCTL_STYPE) {
+		case IEEE80211_STYPE_BEACON:
+			rma = ieee80211_rx_mgmt_beacon(wk, mgmt, skb->len);
+			break;
 		case IEEE80211_STYPE_PROBE_RESP:
 			rma = ieee80211_rx_mgmt_probe_resp(wk, mgmt, skb->len,
 							   rx_status);
@@ -794,7 +841,7 @@ static void ieee80211_work_rx_queued_mgmt(struct ieee80211_local *local,
 		WARN(1, "unexpected: %d", rma);
 	}
 
-	mutex_unlock(&local->work_mtx);
+	mutex_unlock(&local->mtx);
 
 	if (rma != WORK_ACT_DONE)
 		goto out;
@@ -806,9 +853,9 @@ static void ieee80211_work_rx_queued_mgmt(struct ieee80211_local *local,
 	case WORK_DONE_REQUEUE:
 		synchronize_rcu();
 		wk->started = false; /* restart */
-		mutex_lock(&local->work_mtx);
+		mutex_lock(&local->mtx);
 		list_add_tail(&wk->list, &local->work_list);
-		mutex_unlock(&local->work_mtx);
+		mutex_unlock(&local->mtx);
 	}
 
  out:
@@ -840,7 +887,7 @@ static void ieee80211_work_work(struct work_struct *work)
 
 	/*
 	 * ieee80211_queue_work() should have picked up most cases,
-	 * here we'll pick the the rest.
+	 * here we'll pick the rest.
 	 */
 	if (WARN(local->suspended, "work scheduled while going to suspend\n"))
 		return;
@@ -849,9 +896,9 @@ static void ieee80211_work_work(struct work_struct *work)
 	while ((skb = skb_dequeue(&local->work_skb_queue)))
 		ieee80211_work_rx_queued_mgmt(local, skb);
 
-	ieee80211_recalc_idle(local);
+	mutex_lock(&local->mtx);
 
-	mutex_lock(&local->work_mtx);
+	ieee80211_recalc_idle(local);
 
 	list_for_each_entry_safe(wk, tmp, &local->work_list, list) {
 		bool started = wk->started;
@@ -865,18 +912,13 @@ static void ieee80211_work_work(struct work_struct *work)
 		}
 
 		if (!started && !local->tmp_channel) {
-			/*
-			 * TODO: could optimize this by leaving the
-			 *	 station vifs in awake mode if they
-			 *	 happen to be on the same channel as
-			 *	 the requested channel
-			 */
-			ieee80211_offchannel_stop_beaconing(local);
-			ieee80211_offchannel_stop_station(local);
+			ieee80211_offchannel_stop_vifs(local, true);
 
 			local->tmp_channel = wk->chan;
 			local->tmp_channel_type = wk->chan_type;
+
 			ieee80211_hw_config(local, 0);
+
 			started = true;
 			wk->timeout = jiffies;
 		}
@@ -916,6 +958,12 @@ static void ieee80211_work_work(struct work_struct *work)
 		case IEEE80211_WORK_REMAIN_ON_CHANNEL:
 			rma = ieee80211_remain_on_channel_timeout(wk);
 			break;
+		case IEEE80211_WORK_OFFCHANNEL_TX:
+			rma = ieee80211_offchannel_tx(wk);
+			break;
+		case IEEE80211_WORK_ASSOC_BEACON_WAIT:
+			rma = ieee80211_assoc_beacon_wait(wk);
+			break;
 		}
 
 		wk->started = started;
@@ -938,9 +986,8 @@ static void ieee80211_work_work(struct work_struct *work)
 	list_for_each_entry(wk, &local->work_list, list) {
 		if (!wk->started)
 			continue;
-		if (wk->chan != local->tmp_channel)
-			continue;
-		if (wk->chan_type != local->tmp_channel_type)
+		if (wk->chan != local->tmp_channel ||
+		    wk->chan_type != local->tmp_channel_type)
 			continue;
 		remain_off_channel = true;
 	}
@@ -948,12 +995,12 @@ static void ieee80211_work_work(struct work_struct *work)
 	if (!remain_off_channel && local->tmp_channel) {
 		local->tmp_channel = NULL;
 		ieee80211_hw_config(local, 0);
+
 		ieee80211_offchannel_return(local, true);
+
 		/* give connection some time to breathe */
 		run_again(local, jiffies + HZ/2);
 	}
-
-	mutex_lock(&local->scan_mtx);
 
 	if (list_empty(&local->work_list) && local->scan_req &&
 	    !local->scanning)
@@ -961,11 +1008,9 @@ static void ieee80211_work_work(struct work_struct *work)
 					     &local->scan_work,
 					     round_jiffies_relative(0));
 
-	mutex_unlock(&local->scan_mtx);
-
-	mutex_unlock(&local->work_mtx);
-
 	ieee80211_recalc_idle(local);
+
+	mutex_unlock(&local->mtx);
 
 	list_for_each_entry_safe(wk, tmp, &free_work, list) {
 		wk->done(wk, NULL);
@@ -993,16 +1038,15 @@ void ieee80211_add_work(struct ieee80211_work *wk)
 	wk->started = false;
 
 	local = wk->sdata->local;
-	mutex_lock(&local->work_mtx);
+	mutex_lock(&local->mtx);
 	list_add_tail(&wk->list, &local->work_list);
-	mutex_unlock(&local->work_mtx);
+	mutex_unlock(&local->mtx);
 
 	ieee80211_queue_work(&local->hw, &local->work_work);
 }
 
 void ieee80211_work_init(struct ieee80211_local *local)
 {
-	mutex_init(&local->work_mtx);
 	INIT_LIST_HEAD(&local->work_list);
 	setup_timer(&local->work_timer, ieee80211_work_timer,
 		    (unsigned long)local);
@@ -1014,28 +1058,31 @@ void ieee80211_work_purge(struct ieee80211_sub_if_data *sdata)
 {
 	struct ieee80211_local *local = sdata->local;
 	struct ieee80211_work *wk;
+	bool cleanup = false;
 
-	mutex_lock(&local->work_mtx);
+	mutex_lock(&local->mtx);
 	list_for_each_entry(wk, &local->work_list, list) {
 		if (wk->sdata != sdata)
 			continue;
+		cleanup = true;
 		wk->type = IEEE80211_WORK_ABORT;
 		wk->started = true;
 		wk->timeout = jiffies;
 	}
-	mutex_unlock(&local->work_mtx);
+	mutex_unlock(&local->mtx);
 
 	/* run cleanups etc. */
-	ieee80211_work_work(&local->work_work);
+	if (cleanup)
+		ieee80211_work_work(&local->work_work);
 
-	mutex_lock(&local->work_mtx);
+	mutex_lock(&local->mtx);
 	list_for_each_entry(wk, &local->work_list, list) {
 		if (wk->sdata != sdata)
 			continue;
 		WARN_ON(1);
 		break;
 	}
-	mutex_unlock(&local->work_mtx);
+	mutex_unlock(&local->mtx);
 }
 
 ieee80211_rx_result ieee80211_work_rx_mgmt(struct ieee80211_sub_if_data *sdata,
@@ -1065,6 +1112,7 @@ ieee80211_rx_result ieee80211_work_rx_mgmt(struct ieee80211_sub_if_data *sdata,
 		case IEEE80211_STYPE_PROBE_RESP:
 		case IEEE80211_STYPE_ASSOC_RESP:
 		case IEEE80211_STYPE_REASSOC_RESP:
+		case IEEE80211_STYPE_BEACON:
 			skb_queue_tail(&local->work_skb_queue, skb);
 			ieee80211_queue_work(&local->hw, &local->work_work);
 			return RX_QUEUED;
@@ -1120,7 +1168,7 @@ int ieee80211_wk_cancel_remain_on_channel(struct ieee80211_sub_if_data *sdata,
 	struct ieee80211_work *wk, *tmp;
 	bool found = false;
 
-	mutex_lock(&local->work_mtx);
+	mutex_lock(&local->mtx);
 	list_for_each_entry_safe(wk, tmp, &local->work_list, list) {
 		if ((unsigned long) wk == cookie) {
 			wk->timeout = jiffies;
@@ -1128,7 +1176,7 @@ int ieee80211_wk_cancel_remain_on_channel(struct ieee80211_sub_if_data *sdata,
 			break;
 		}
 	}
-	mutex_unlock(&local->work_mtx);
+	mutex_unlock(&local->mtx);
 
 	if (!found)
 		return -ENOENT;

@@ -6,8 +6,8 @@
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <linux/pagemap.h>
-#include <linux/bootmem.h>
 #include <linux/io.h>
+#include <linux/memblock.h>
 
 #include <asm/cacheflush.h>
 #include <asm/sections.h>
@@ -17,30 +17,20 @@
 
 #include "mm.h"
 
-/*
- * Reserve the various regions of node 0
- */
-void __init reserve_node_zero(pg_data_t *pgdat)
+void __init arm_mm_memblock_reserve(void)
 {
-	/*
-	 * Register the kernel text and data with bootmem.
-	 * Note that this can only be in node 0.
-	 */
-#ifdef CONFIG_XIP_KERNEL
-	reserve_bootmem_node(pgdat, __pa(_data), _end - _data,
-			BOOTMEM_DEFAULT);
-#else
-	reserve_bootmem_node(pgdat, __pa(_stext), _end - _stext,
-			BOOTMEM_DEFAULT);
-#endif
-
 	/*
 	 * Register the exception vector page.
 	 * some architectures which the DRAM is the exception vector to trap,
 	 * alloc_page breaks with error, although it is not NULL, but "0."
 	 */
-	reserve_bootmem_node(pgdat, CONFIG_VECTORS_BASE, PAGE_SIZE,
-			BOOTMEM_DEFAULT);
+	memblock_reserve(CONFIG_VECTORS_BASE, PAGE_SIZE);
+}
+
+void __init sanity_check_meminfo(void)
+{
+	phys_addr_t end = bank_phys_end(&meminfo.bank[meminfo.nr_banks - 1]);
+	high_memory = __va(end - 1) + 1;
 }
 
 /*
@@ -55,7 +45,7 @@ void __init paging_init(struct machine_desc *mdesc)
 /*
  * We don't need to do anything here for nommu machines.
  */
-void setup_mm_for_reboot(char mode)
+void setup_mm_for_reboot(void)
 {
 }
 

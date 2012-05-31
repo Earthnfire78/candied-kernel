@@ -26,6 +26,7 @@
 
 #include <linux/types.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/pci.h>
 #include <linux/init.h>
 #include <linux/ioport.h>
@@ -72,9 +73,6 @@ pcibios_align_resource(void *data, const struct resource *res,
 			return start;
 		if (start & 0x300)
 			start = (start + 0x3ff) & ~0x3ff;
-	} else if (res->flags & IORESOURCE_MEM) {
-		if (start < BIOS_END)
-			start = BIOS_END;
 	}
 	return start;
 }
@@ -244,7 +242,7 @@ void __init pcibios_resource_survey(void)
 	e820_reserve_resources_late();
 	/*
 	 * Insert the IO APIC resources after PCI initialization has
-	 * occured to handle IO APICS that are mapped in on a BAR in
+	 * occurred to handle IO APICS that are mapped in on a BAR in
 	 * PCI space, but before trying to assign unassigned pci res.
 	 */
 	ioapic_insert_resources();
@@ -255,26 +253,6 @@ void __init pcibios_resource_survey(void)
  * give a chance for motherboard reserve resources
  */
 fs_initcall(pcibios_assign_resources);
-
-/*
- *  If we set up a device for bus mastering, we need to check the latency
- *  timer as certain crappy BIOSes forget to set it properly.
- */
-unsigned int pcibios_max_latency = 255;
-
-void pcibios_set_master(struct pci_dev *dev)
-{
-	u8 lat;
-	pci_read_config_byte(dev, PCI_LATENCY_TIMER, &lat);
-	if (lat < 16)
-		lat = (64 <= pcibios_max_latency) ? 64 : pcibios_max_latency;
-	else if (lat > pcibios_max_latency)
-		lat = pcibios_max_latency;
-	else
-		return;
-	dev_printk(KERN_DEBUG, &dev->dev, "setting latency timer to %d\n", lat);
-	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
-}
 
 static const struct vm_operations_struct pci_mmap_ops = {
 	.access = generic_access_phys,
@@ -307,9 +285,11 @@ int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
 		/*
 		 * ioremap() and ioremap_nocache() defaults to UC MINUS for now.
 		 * To avoid attribute conflicts, request UC MINUS here
-		 * aswell.
+		 * as well.
 		 */
 		prot |= _PAGE_CACHE_UC_MINUS;
+
+	prot |= _PAGE_IOMAP;	/* creating a mapping for IO */
 
 	vma->vm_page_prot = __pgprot(prot);
 
