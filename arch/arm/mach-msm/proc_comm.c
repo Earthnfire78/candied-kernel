@@ -56,6 +56,11 @@ static inline void notify_other_proc_comm(void)
 
 static DEFINE_SPINLOCK(proc_comm_lock);
 
+/* The higher level SMD support will install this to
+ * provide a way to check for and handle modem restart.
+ */
+int (*msm_check_for_modem_crash)(void);
+ 
 /* Poll for a state change, checking for possible
  * modem crashes along the way (so we don't wait
  * forever while the ARM9 is blowing up.
@@ -175,5 +180,20 @@ crash:
 	}
 /* LGE_CHANGE_E [bluerti@lge.com] 2009-07-06 <For Error Handler > */
 #endif
+}
+
+/*
+ * We need to wait for the ARM9 to at least partially boot
+ * up before we can continue. Since the ARM9 does resource
+ * allocation, if we dont' wait we could end up crashing or in
+ * and unknown state. This function should be called early to
+ * wait on the ARM9.
+ */
+void __init proc_comm_boot_wait(void)
+{
+        void __iomem *base = MSM_SHARED_RAM_BASE;
+
+        proc_comm_wait_for(base + MDM_STATUS, PCOM_READY);
+ 
 }
 EXPORT_SYMBOL(msm_proc_comm);

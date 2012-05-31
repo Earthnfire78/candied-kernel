@@ -127,30 +127,11 @@ config MACH_MSM8X60_RUMI3
 	help
 	  Support for the Qualcomm MSM8x60 RUMI3 emulator.
 
-
-source "arch/arm/mach-msm/lge/Kconfig"
-
 config MACH_MSM8X60_SURF
 	depends on ARCH_MSM8X60
 	bool "MSM8x60 SURF"
 	help
 	  Support for the Qualcomm MSM8x60 SURF eval board.
-config PHYS_OFFSET
-	hex
-	#LGE_CHANGE, for 4G DDR support
-	default "0x12800000" if MACH_MSM7X27_THUNDERG
-	default "0x12200000" if MACH_MSM7X27_THUNDERC
-	default "0x12800000" if MACH_MSM7X27_THUNDERA
-	default "0x12800000" if MACH_MSM7X27_GELATO
-	default "0x12800000" if MACH_MSM7X27_UNIVA
-	default "0x02800000" if MACH_MSM7X27_MUSCAT
-	default "0x02800000" if MACH_MSM7X27_JUMP
-	default "0x00200000" if !MSM_STACKED_MEMORY
-	default "0x00000000" if ARCH_QSD8X50 && MSM_SOC_REV_A
-	default "0x20000000" if ARCH_QSD8X50
-	default "0x40200000" if ARCH_MSM8X60
-	default "0x10000000"
-
 
 config MACH_MSM8X60_SIM
 	depends on ARCH_MSM8X60
@@ -178,14 +159,54 @@ config MACH_MSM8960_RUMI3
 
 endmenu
 
-config MSM_SMD_PKG3
-	bool
+source "arch/arm/mach-msm/lge/Kconfig"
+
+config PHYS_OFFSET
+	hex
+	#LGE_CHANGE, for 4G DDR support
+	default "0x12800000" if MACH_MSM7X27_THUNDERG
+	default "0x12200000" if MACH_MSM7X27_THUNDERC
+	default "0x12800000" if MACH_MSM7X27_THUNDERA
+	default "0x12800000" if MACH_MSM7X27_GELATO
+	default "0x12800000" if MACH_MSM7X27_UNIVA
+	default "0x02800000" if MACH_MSM7X27_MUSCAT
+	default "0x02800000" if MACH_MSM7X27_JUMP
+	default "0x00200000" if !MSM_STACKED_MEMORY
+	default "0x00000000" if ARCH_QSD8X50 && MSM_SOC_REV_A
+	default "0x20000000" if ARCH_QSD8X50
+	default "0x40200000" if ARCH_MSM8X60
+	default "0x10000000"
 
 config MSM_PROC_COMM
-	bool
+	default y
+	bool "Proc-Comm RPC Interface"
+	help
+	  Enables a lightweight communications interface to the
+	  baseband processor.
 
 config MSM_SMD
-	bool
+	bool "MSM Shared Memory Driver (SMD)"
+	help
+	  Support for the shared memory interface between the apps
+	  processor and the baseband processor.  Provides access to
+	  the "shared heap", as well as virtual serial channels
+	  used to communicate with various services on the baseband
+	  processor.
+
+choice
+	prompt "MSM Shared memory interface version"
+	depends on MSM_SMD
+	default MSM_SMD_PKG3 if ARCH_MSM_ARM11
+	default MSM_SMD_PKG4 if ARCH_MSM_SCORPION
+
+	config MSM_SMD_PKG3
+	  bool
+	    prompt "Package 3"
+
+	config MSM_SMD_PKG4
+	  bool
+	    prompt "Package 4"
+endchoice
 
 config MSM_GPIOMUX
 	bool

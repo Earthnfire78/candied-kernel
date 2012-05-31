@@ -20,6 +20,8 @@
 
 typedef struct smd_channel smd_channel_t;
 
+extern int (*msm_check_for_modem_crash)(void);
+
 /* warning: notify() may be called before open returns */
 int smd_open(const char *name, smd_channel_t **ch, void *priv,
 	     void (*notify)(void *priv, unsigned event));
