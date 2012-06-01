@@ -24,6 +24,12 @@
 #include <linux/persistent_ram.h>
 #include "ram_console.h"
 
+#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+int dmesg_restrict = 1;
+#else
+int dmesg_restrict;
+#endif
+
 static struct persistent_ram_zone *ram_console_zone;
 static const char *bootinfo;
 static size_t bootinfo_size;
