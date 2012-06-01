@@ -32,6 +32,7 @@
 #include <linux/remote_spinlock.h>
 #include <linux/pm_qos_params.h>
 #include <mach/gpio.h>
+#include <linux/module.h>
 
 
 enum {
@@ -658,11 +659,13 @@ static int msm_i2c_suspend(struct platform_device *pdev, pm_message_t state) {
 	}
 	return 0;
 }
+
 static int msm_i2c_resume(struct platform_device *pdev) {
 	struct msm_i2c_dev *dev = platform_get_drvdata(pdev);
 	dev->suspended = 0;
 	return 0;
 }
+
 static struct platform_driver msm_i2c_driver = {
 	.probe = msm_i2c_probe,
 	.remove = msm_i2c_remove,
@@ -673,10 +676,16 @@ static struct platform_driver msm_i2c_driver = {
 		.owner	= THIS_MODULE,
 	},
 };
-/* I2C may be needed to bring up other drivers */ static int __init msm_i2c_init_driver(void) {
+
+/* I2C may be needed to bring up other drivers */
+static int __init msm_i2c_init_driver(void) {
 	return platform_driver_register(&msm_i2c_driver);
 }
-subsys_initcall(msm_i2c_init_driver); static void __exit msm_i2c_exit_driver(void) {
+
+subsys_initcall(msm_i2c_init_driver);
+
+static void __exit msm_i2c_exit_driver(void) {
 	platform_driver_unregister(&msm_i2c_driver);
 }
+
 module_exit(msm_i2c_exit_driver);
