@@ -88,6 +88,7 @@ struct msm_i2c_dev {
 	void *complete;
 	struct pm_qos_request_list pm_qos_req;
 };
+
 static void msm_i2c_pwr_mgmt(struct msm_i2c_dev *dev, unsigned int state) {
 	dev->clk_state = state;
 	if (state != 0)
@@ -596,7 +597,7 @@ static int msm_i2c_probe(struct platform_device *pdev) {
 		dev_err(&pdev->dev, "request_irq failed\n");
 		goto err_request_irq_failed;
 	}
-	&dev->pm_qos_req = pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,//&dev->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
+	pm_qos_add_request(&dev->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
 					     PM_QOS_DEFAULT_VALUE);
 	disable_irq(dev->irq);
 	dev->suspended = 0;
