@@ -6714,12 +6714,13 @@ void msm_nand_release(struct mtd_info *mtd)
 {
 	/* struct msm_nand_chip *this = mtd->priv; */
 
-#ifdef CONFIG_MTD_PARTITIONS
-	/* Deregister partitions */
-	del_mtd_partitions(mtd);
-#endif
-	/* Deregister the device */
-	del_mtd_device(mtd);
+//#ifdef CONFIG_MTD_PARTITIONS
+//	/* Deregister partitions */
+//	del_mtd_partitions(mtd);
+//#endif
+//	/* Deregister the device */
+//	del_mtd_device(mtd);
+	mtd_device_unregister(mtd);
 }
 EXPORT_SYMBOL_GPL(msm_nand_release);
 
@@ -6800,7 +6801,22 @@ static void setup_mtd_device(struct platform_device *pdev,
 static void setup_mtd_device(struct platform_device *pdev,
 			     struct msm_nand_info *info)
 {
-	add_mtd_device(&info->mtd);
+	int i, err;
+       	struct flash_platform_data *pdata = pdev->dev.platform_data;
+
+        if (pdata) {
+                 for (i = 0; i < pdata->nr_parts; i++) {
+                         pdata->parts[i].offset = pdata->parts[i].offset
+                                 * info->mtd.erasesize;
+                         pdata->parts[i].size = pdata->parts[i].size
+                                 * info->mtd.erasesize;
+                 }
+                 err = mtd_device_register(&info->mtd, pdata->parts,
+                                 pdata->nr_parts);
+         } else {
+                 err = mtd_device_register(&info->mtd, NULL, 0);
+         }
+         return err;
 }
 #endif
 
@@ -6893,8 +6909,8 @@ no_dual_nand_ctlr_support:
 	pr_info("%s: allocated dma buffer at %p, dma_addr %x\n",
 		__func__, info->msm_nand.dma_buffer, info->msm_nand.dma_addr);
 
-	crci_mask = msm_dmov_build_crci_mask(2,
-			DMOV_NAND_CRCI_DATA, DMOV_NAND_CRCI_CMD);
+//	crci_mask = msm_dmov_build_crci_mask(2,
+//			DMOV_NAND_CRCI_DATA, DMOV_NAND_CRCI_CMD);
 
 	info->mtd.name = dev_name(&pdev->dev);
 	info->mtd.priv = &info->msm_nand;
@@ -6936,13 +6952,13 @@ static int __devexit msm_nand_remove(struct platform_device *pdev)
 	dev_set_drvdata(&pdev->dev, NULL);
 
 	if (info) {
-#ifdef CONFIG_MTD_PARTITIONS
-		if (info->parts)
-			del_mtd_partitions(&info->mtd);
-		else
-#endif
-			del_mtd_device(&info->mtd);
-
+//#ifdef CONFIG_MTD_PARTITIONS
+//		if (info->parts)
+//			del_mtd_partitions(&info->mtd);
+//		else
+//#endif
+//			del_mtd_device(&info->mtd);
+//
 		msm_nand_release(&info->mtd);
 		dma_free_coherent(NULL, MSM_NAND_DMA_BUFFER_SIZE,
 				  info->msm_nand.dma_buffer,
