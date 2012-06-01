@@ -113,6 +113,7 @@ struct io_context {
 	struct radix_tree_root	icq_tree;
 	struct io_cq __rcu	*icq_hint;
 	struct hlist_head	icq_list;
+	struct hlist_head	bfq_cic_list;
 
 	struct work_struct release_work;
 };

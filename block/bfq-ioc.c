@@ -18,7 +18,7 @@
  */
 static void bfq_cic_free_rcu(struct rcu_head *head)
 {
-	struct cfq_io_context *cic;
+	struct cfq_io_cq *cic;
 
 	cic = container_of(head, struct cfq_io_context, rcu_head);
 
