@@ -259,8 +259,15 @@ void mdp_ppp_dump_debug(const struct mdp_info *mdp);
 
 /* MDP_INTR_ENABLE */
 #define DL0_ROI_DONE			(1<<0)
+#define DL1_ROI_DONE			(1<<1)
+#define DL0_DMA2_TERM_DONE		(1<<2)
+#define DL1_DMA2_TERM_DONE		(1<<3)
+#define DL0_PPP_TERM_DONE		(1<<4)
+#define DL1_PPP_TERM_DONE		(1<<5)
 #define TV_OUT_DMA3_DONE		(1<<6)
 #define TV_ENC_UNDERRUN			(1<<7)
+#define DL0_FETCH_DONE			(1<<11)
+#define DL1_FETCH_DONE			(1<<12)
 
 #ifdef CONFIG_MSM_MDP22
 #define MDP_DMA_P_DONE			(1 << 2)
@@ -269,6 +276,16 @@ void mdp_ppp_dump_debug(const struct mdp_info *mdp);
 #define MDP_LCDC_UNDERFLOW		(1 << 16)
 #define MDP_LCDC_FRAME_START		(1 << 15)
 #endif
+
+#define MDP_ANY_INTR_MASK (DL0_ROI_DONE| \
+                           DL1_ROI_DONE| \
+                           DL0_DMA2_TERM_DONE| \
+                           DL1_DMA2_TERM_DONE| \
+                           DL0_PPP_TERM_DONE| \
+                           DL1_PPP_TERM_DONE| \
+                           DL0_FETCH_DONE| \
+                           DL1_FETCH_DONE| \
+                           TV_ENC_UNDERRUN)
 
 #define MDP_TOP_LUMA       16
 #define MDP_TOP_CHROMA     0
