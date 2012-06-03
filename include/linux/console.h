@@ -139,6 +139,8 @@ extern int update_console_cmdline(char *name, int idx, char *name_new, int idx_n
 extern void register_console(struct console *);
 extern int unregister_console(struct console *);
 extern struct console *console_drivers;
+extern void acquire_console_sem(void);
+extern int try_acquire_console_sem(void);
 extern void console_lock(void);
 extern int console_trylock(void);
 extern void console_unlock(void);
