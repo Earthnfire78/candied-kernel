@@ -60,6 +60,10 @@ obj-$(CONFIG_TOUCHSCREEN_MCS6000)	+= mcs6000_ts_gb.o
 obj-$(CONFIG_TOUCHSCREEN_MCS6000_TA)	+= ta-mcs6000_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MCS6000_SIPPOLO)       += mcs6000_ts_sippolo.o
 obj-$(CONFIG_TOUCHSCREEN_MCS6000_CAVEMAN)       += mcs6000_ts_caveman.o
+#ifeq ($(CONFIG_MACH_MSM7X27_ALESSI), y)
+#obj-$(CONFIG_TOUCHSCREEN_MCS6000)      += melfas_download.o
+#obj-$(CONFIG_TOUCHSCREEN_MCS6000)      += melfas_firmware.o
+#endif
 #obj-$(CONFIG_TOUCHSCREEN_MCS7000)	+= mcs7000_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MCS7000)	+= mcs7000_ts_muscat.o
 obj-$(CONFIG_TOUCHSCREEN_MCS8000)	+= mcs8000_ts.o
