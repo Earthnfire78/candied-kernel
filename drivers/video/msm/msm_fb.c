@@ -1464,11 +1464,11 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 		dirtyPtr = &dirty;
 	}
 
-	down(&msm_fb_pan_sem);
+//	down(&msm_fb_pan_sem);
 	mdp_set_dma_pan_info(info, dirtyPtr,
 			     (var->activate == FB_ACTIVATE_VBL));
 	mdp_dma_pan_update(info);
-	up(&msm_fb_pan_sem);
+//	up(&msm_fb_pan_sem);
 
 	++mfd->panel_info.frame_count;
 	return 0;
@@ -2714,9 +2714,9 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 #endif
 	case MSMFB_BLIT:
-		down(&msm_fb_ioctl_ppp_sem);
+//		down(&msm_fb_ioctl_ppp_sem);
 		ret = msmfb_blit(info, argp);
-		up(&msm_fb_ioctl_ppp_sem);
+//		up(&msm_fb_ioctl_ppp_sem);
 
 		break;
 
@@ -2731,14 +2731,14 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			return ret;
 		}
 
-		down(&msm_fb_ioctl_ppp_sem);
+//		down(&msm_fb_ioctl_ppp_sem);
 		if (ccs_matrix.direction == MDP_CCS_RGB2YUV)
 			mdp_ccs_rgb2yuv = ccs_matrix;
 		else
 			mdp_ccs_yuv2rgb = ccs_matrix;
 
 		msmfb_set_color_conv(&ccs_matrix) ;
-		up(&msm_fb_ioctl_ppp_sem);
+//		up(&msm_fb_ioctl_ppp_sem);
 #else
 		ret = -EINVAL;
 #endif
@@ -2756,7 +2756,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			return ret;
 		}
 
-		down(&msm_fb_ioctl_ppp_sem);
+//		down(&msm_fb_ioctl_ppp_sem);
 		if (ccs_matrix.direction == MDP_CCS_RGB2YUV)
 			ccs_matrix = mdp_ccs_rgb2yuv;
 		 else
@@ -2770,7 +2770,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 				 __func__);
 			return ret ;
 		}
-		up(&msm_fb_ioctl_ppp_sem);
+//		up(&msm_fb_ioctl_ppp_sem);
 #else
 		ret = -EINVAL;
 #endif
