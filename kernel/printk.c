@@ -341,11 +341,11 @@ int log_buf_copy(char *dest, int idx, int len)
 	return ret;
 }
 
-#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-int dmesg_restrict = 1;
-#else
+//#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+//int dmesg_restrict = 1;
+//#else
 int dmesg_restrict;
-#endif
+//#endif
 
 static int syslog_action_restricted(int type)
 {

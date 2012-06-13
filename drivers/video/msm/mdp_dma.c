@@ -279,9 +279,9 @@ enum hrtimer_restart mdp_dma2_vsync_hrtimer_handler(struct hrtimer *ht)
 
 		t = ktime_get_real();
 
-		actual_wait =
-		    (t.tv.sec - vt.tv.sec) * 1000000 + (t.tv.nsec -
-							vt.tv.nsec) / 1000;
+//		actual_wait =
+//		    (t.tv.sec - vt.tv.sec) * 1000000 + (t.tv.nsec -
+//							vt.tv.nsec) / 1000;
 		usec_diff = actual_wait - mdp_expected_usec_wait;
 
 		if ((mdp_usec_diff_threshold < usec_diff) || (usec_diff < 0))
@@ -313,8 +313,8 @@ static void mdp_dma_schedule(struct msm_fb_data_type *mfd, uint32 term)
 	if (term == MDP_DMA2_TERM)
 		mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
 
-	mdp_dma2_update_time_in_usec =
-	    MDP_KTIME2USEC(mdp_dma2_last_update_time);
+//	mdp_dma2_update_time_in_usec =
+//	    MDP_KTIME2USEC(mdp_dma2_last_update_time);
 
 	if ((!mfd->ibuf.vsync_enable) || (!mfd->panel_info.lcd.vsync_enable)
 	    || (mfd->use_mdp_vsync)) {
@@ -401,8 +401,8 @@ static void mdp_dma_schedule(struct msm_fb_data_type *mfd, uint32 term)
 	} else {
 		ktime_t wait_time;
 
-		wait_time.tv.sec = 0;
-		wait_time.tv.nsec = usec_wait_time * 1000;
+//		wait_time.tv.sec = 0;
+//		wait_time.tv.nsec = usec_wait_time * 1000;
 
 		if (msm_fb_debug_enabled) {
 			vt = ktime_get_real();
