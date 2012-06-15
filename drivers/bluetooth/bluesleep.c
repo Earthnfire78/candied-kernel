@@ -178,8 +178,7 @@ void bluesleep_sleep_wakeup(void)
 		clear_bit(BT_ASLEEP, &flags);
 		/*Activating UART */
 		hsuart_power(1);
-	}
-	else {
+	} else {
 		/* Just start the timer if not asleep */
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 	}
