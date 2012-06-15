@@ -37,6 +37,7 @@
 #include <linux/quotaops.h>
 #include <linux/seq_file.h>
 #include <linux/log2.h>
+#include <linux/cleancache.h>
 
 #include <asm/uaccess.h>
 
@@ -412,7 +413,7 @@ static void ext3_put_super (struct super_block * sb)
 
 	dquot_disable(sb, -1, DQUOT_USAGE_ENABLED | DQUOT_LIMITS_ENABLED);
 
-	//lock_kernel();
+	lock_kernel();
 
 	ext3_xattr_put_super(sb);
 	err = journal_destroy(sbi->s_journal);
@@ -463,7 +464,7 @@ static void ext3_put_super (struct super_block * sb)
 	kfree(sbi->s_blockgroup_lock);
 	kfree(sbi);
 
-	//unlock_kernel();
+	unlock_kernel();
 }
 
 static struct kmem_cache *ext3_inode_cachep;
@@ -1362,6 +1363,7 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
 	} else {
 		ext3_msg(sb, KERN_INFO, "using internal journal");
 	}
+	cleancache_init_fs(sb);
 	return res;
 }
 
@@ -1456,13 +1458,6 @@ static void ext3_orphan_cleanup (struct super_block * sb,
 	if (bdev_read_only(sb->s_bdev)) {
 		ext3_msg(sb, KERN_ERR, "error: write access "
 			"unavailable, skipping orphan cleanup.");
-		return;
-	}
-
-	/* Check if feature set allows readwrite operations */
-	if (EXT3_HAS_RO_COMPAT_FEATURE(sb, ~EXT3_FEATURE_RO_COMPAT_SUPP)) {
-		printk(KERN_INFO "EXT3-fs: %s: Skipping orphan cleanup due to "
-			 "unknown ROCOMPAT features\n", sb->s_id);
 		return;
 	}
 
@@ -2566,7 +2561,7 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
 	int i;
 #endif
 
-	//lock_kernel();
+	lock_kernel();
 
 	/* Store the original options */
 	lock_super(sb);
@@ -2676,7 +2671,7 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
 			kfree(old_opts.s_qf_names[i]);
 #endif
 	unlock_super(sb);
-	//unlock_kernel();
+	unlock_kernel();
 
 	if (enable_quota)
 		dquot_resume(sb, -1);
@@ -2697,7 +2692,7 @@ restore_opts:
 	}
 #endif
 	unlock_super(sb);
-	//unlock_kernel();
+	unlock_kernel();
 	return err;
 }
 

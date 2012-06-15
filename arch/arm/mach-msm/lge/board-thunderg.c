@@ -71,6 +71,10 @@
 #include <mach/board_lge.h>
 #include "board-thunderg.h"
 
+
+
+
+
 /* board-specific pm tuning data definitions */
 
 /* currently, below declaration code is blocked.
@@ -391,7 +395,7 @@ struct android_usb_platform_data android_usb_pdata = {
 	.vendor_id  = 0x1004,
 	.product_id = 0x618E,
 	.version    = 0x0100,
-	.product_name       = "LGE USB Device",
+	.product_name       = "LGE Android Phone",
 	.manufacturer_name  = "LG Electronics Inc.",
 	.num_products = ARRAY_SIZE(usb_products),
 	.products = usb_products,
@@ -423,7 +427,7 @@ static struct msm_acpu_clock_platform_data msm7x2x_clock_data = {
 	.acpu_switch_time_us = 50,
 	.max_speed_delta_khz = 400000,
 	.vdd_switch_time_us = 62,
-	.max_axi_khz = 422400, //600000, //422400, // 200000 //160000,
+	.max_axi_khz = 200000,
 };
 
 void msm_serial_debug_init(unsigned int base, int irq,
@@ -447,7 +451,7 @@ static void msm7x27_wlan_init(void)
  * 2010-04-18, cleaneye.kim@lge.com
  */
 unsigned pmem_fb_size = 	0x96000;
-unsigned pmem_adsp_size =	0x9DE000; //0xAE4000;
+unsigned pmem_adsp_size =	0x9DE000;
 
 static void __init msm7x2x_init(void)
 {
