@@ -176,21 +176,6 @@ static void cpufreq_stats_free_table(unsigned int cpu)
 		kfree(stat);
 	}
 	per_cpu(cpufreq_stats_table, cpu) = NULL;
-<<<<<<<
-=======
-}
-
-/* must be called early in the CPU removal sequence (before
- * cpufreq_remove_dev) so that policy is still valid.
- */
-static void cpufreq_stats_free_sysfs(unsigned int cpu)
-{
-	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-	if (policy && policy->cpu == cpu)
-		sysfs_remove_group(&policy->kobj, &stats_attr_group);
-	if (policy)
-		cpufreq_cpu_put(policy);
->>>>>>>
 }
 
 /* must be called early in the CPU removal sequence (before
@@ -367,9 +352,6 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
 	case CPU_DOWN_PREPARE:
 		cpufreq_stats_free_sysfs(cpu);
 		break;
-	case CPU_DOWN_PREPARE:
-		cpufreq_stats_free_sysfs(cpu);
-		break;
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
 		cpufreq_stats_free_table(cpu);
@@ -383,12 +365,8 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
 }
 
 /* priority=1 so this will get called before cpufreq_remove_dev */
-<<<<<<<
-static struct notifier_block cpufreq_stat_cpu_notifier __refdata = {
-=======
 static struct notifier_block cpufreq_stat_cpu_notifier __refdata =
 {
->>>>>>>
 	.notifier_call = cpufreq_stat_cpu_callback,
 	.priority = 1,
 };
