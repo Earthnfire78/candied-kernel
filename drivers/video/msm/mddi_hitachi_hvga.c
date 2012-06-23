@@ -631,9 +631,7 @@ static int mddi_hitachi_lcd_store_on(void)
 
 static int mddi_hitachi_lcd_off(struct platform_device *pdev)
 {
-//LGE_S mahesh.kamarnat@lge.com -- LCD Patch
-//	display_table(mddi_hitachi_sleep_mode_on_data, sizeof(mddi_hitachi_sleep_mode_on_data)/sizeof(struct display_table));
-//LGE_E mahesh.kamarnat@lge.com -- LCD Patch
+	display_table(mddi_hitachi_sleep_mode_on_data, sizeof(mddi_hitachi_sleep_mode_on_data)/sizeof(struct display_table));
 	mddi_hitachi_lcd_panel_poweroff();
 	is_lcd_on = FALSE;
 	return 0;
