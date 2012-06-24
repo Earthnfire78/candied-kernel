@@ -714,11 +714,11 @@ config TOUCHSCREEN_MCS6000
 	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here: the
-	  module will be called mcs2006.
+	  module will be called mcs6000_ts.
 
-config TOUCHSCREEN_MCS6000_SIPPOLO
+config TOUCHSCREEN_MCS6000_ROQU
         default n  
-        tristate "MCS6000 touchscreens from sippolo"
+        tristate "MCS6000 touchscreens from ROQU"
         depends on I2C
         help
           Say Y here if you have a MCS6000 touchscreen.
@@ -726,7 +726,7 @@ config TOUCHSCREEN_MCS6000_SIPPOLO
           If unsure, say N.
 
           To compile this driver as a module, choose M here: the
-          module will be called mcs2006.
+          module will be called mcs6000_ts.
 
 config TOUCHSCREEN_MCS6000_TA
         default n
@@ -738,7 +738,7 @@ config TOUCHSCREEN_MCS6000_TA
           If unsure, say N.
 
           To compile this driver as a module, choose M here: the
-          module will be called tsc2007.
+          module will be called mcs6000_ts.
 
 config TOUCHSCREEN_MCS6000_CAVEMAN
         default n  
@@ -750,6 +750,6 @@ config TOUCHSCREEN_MCS6000_CAVEMAN
           If unsure, say N.
 
           To compile this driver as a module, choose M here: the
-          module will be called mcs2006.
+          module will be called mcs6000_ts.
 
 endif
