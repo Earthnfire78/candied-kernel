@@ -161,6 +161,11 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 	flags = (in_atomic()) ? GFP_ATOMIC: GFP_KERNEL;
 	osh = kzalloc(sizeof(osl_t), flags);
 	ASSERT(osh);
+	
+	if (!osh) {
+		 return NULL;
+	}
+	
 	ASSERT(ABS(BCME_LAST) == (ARRAYSIZE(linuxbcmerrormap) - 1));
 
 	osh->magic = OS_HANDLE_MAGIC;
