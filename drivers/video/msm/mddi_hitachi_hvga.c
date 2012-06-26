@@ -759,9 +759,9 @@ static int mddi_hitachi_lcd_init(void)
 		pinfo->lcd.v_pulse_width = 4;
 
 		#ifdef FB_MSM_VSYNC_ENABLED
-			pinfo->lcd.lcd.hw_vsync_mode = TRUE;
+			pinfo->lcd.hw_vsync_mode = TRUE;
 		#else
-			pinfo->lcd.lcd.hw_vsync_mode = FALSE;
+			pinfo->lcd.hw_vsync_mode = FALSE;
 		#endif
 		pinfo->lcd.vsync_notifier_period = (1 * HZ);
 
