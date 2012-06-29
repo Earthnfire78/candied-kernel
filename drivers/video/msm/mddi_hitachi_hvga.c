@@ -741,7 +741,7 @@ static int mddi_hitachi_lcd_init(void)
 		pinfo->bpp = 16;
 	
 		// vsync config
-		#ifdef FB_MSM_VSYNC_ENABLED
+		#ifdef CONFIG_FB_MSM_VSYNC_ENABLED
 			pinfo->lcd.vsync_enable = TRUE;
 		#else
 			pinfo->lcd.vsync_enable = FALSE;
@@ -758,7 +758,7 @@ static int mddi_hitachi_lcd_init(void)
 		pinfo->lcd.v_front_porch = 6;
 		pinfo->lcd.v_pulse_width = 4;
 
-		#ifdef FB_MSM_VSYNC_ENABLED
+		#ifdef CONFIG_FB_MSM_VSYNC_ENABLED
 			pinfo->lcd.hw_vsync_mode = TRUE;
 		#else
 			pinfo->lcd.hw_vsync_mode = FALSE;
