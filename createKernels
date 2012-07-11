@@ -1,0 +1,39 @@
+#get path
+CURRENT=`pwd`
+BASEDIR=`basename $CURRENT`
+echo $BASEDIR
+
+#save original config
+mv .config .config_save
+
+#compile form clean base
+make clean
+
+cp .config-ta_off .config
+./mka
+cd ..
+./anykernelmaker $BASEDIR $1-ta-vsyncOff $2
+cp 
+cd $BASEDIR
+
+cp .config-ta_on .config
+./mka
+cd ..
+./anykernelmaker $BASEDIR $1-ta-vsync $2
+cd $BASEDIR
+
+cp .config-roqu_off .config
+./mka
+cd ..
+./anykernelmaker $BASEDIR $1-roqu-vsyncOff $2
+cd $BASEDIR
+
+cp .config-roqu_on .config
+./mka
+cd ..
+./anykernelmaker $BASEDIR $1-ta-vsync $2
+cd $BASEDIR
+
+cd $2
+echo commit -a -m "$1"
+echo push
