@@ -2,6 +2,7 @@
 CURRENT=`pwd`
 BASEDIR=`basename $CURRENT`
 echo $BASEDIR
+echo $2
 
 #save original config
 mv .config .config_save
@@ -9,31 +10,47 @@ mv .config .config_save
 #compile form clean base
 make clean
 
+echo
+echo ta_off
 cp .config-ta_off .config
 ./mka
 cd ..
 ./anykernelmaker $BASEDIR $1-ta-vsyncOff $2
-cp 
 cd $BASEDIR
 
+echo
+echo ta_on
 cp .config-ta_on .config
 ./mka
 cd ..
 ./anykernelmaker $BASEDIR $1-ta-vsync $2
 cd $BASEDIR
 
+echo
+echo roqu_off
 cp .config-roqu_off .config
 ./mka
 cd ..
 ./anykernelmaker $BASEDIR $1-roqu-vsyncOff $2
 cd $BASEDIR
 
+echo
+echo roqu_on
 cp .config-roqu_on .config
 ./mka
 cd ..
-./anykernelmaker $BASEDIR $1-ta-vsync $2
-cd $BASEDIR
+./anykernelmaker $BASEDIR $1-roqu-vsync $2
 
+echo 
 cd $2
-echo commit -a -m "$1"
-echo push
+git status
+echo 
+git commit -a -m "$1"
+git push
+
+cd ..
+cd $1
+
+#restore original config
+mv .config_save .config
+
