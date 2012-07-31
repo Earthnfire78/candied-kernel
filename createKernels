@@ -33,7 +33,6 @@ cd ..
 ./anykernelmaker $BASEDIR $1ics-roqu-vsyncOff-$DATUM $2
 
 echo `pwd`
-read
 echo 
 cd $2
 git status
