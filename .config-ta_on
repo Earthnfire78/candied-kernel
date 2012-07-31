@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.14
-# Sun Jul 22 21:43:24 2012
+# Wed Jul 25 14:22:43 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1438,8 +1438,6 @@ CONFIG_VIDEO_MEDIA=y
 # Multimedia drivers
 #
 # CONFIG_IR_CORE is not set
-CONFIG_VIDEO_IR=y
-# CONFIG_IR_IMON is not set
 # CONFIG_MEDIA_ATTACH is not set
 CONFIG_MEDIA_TUNER=y
 # CONFIG_MEDIA_TUNER_CUSTOMISE is not set
@@ -1458,7 +1456,6 @@ CONFIG_VIDEO_CAPTURE_DRIVERS=y
 # CONFIG_VIDEO_ADV_DEBUG is not set
 # CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
 CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
-CONFIG_VIDEO_IR_I2C=y
 # CONFIG_VIDEO_CPIA is not set
 # CONFIG_VIDEO_CPIA2 is not set
 # CONFIG_VIDEO_SAA5246A is not set
