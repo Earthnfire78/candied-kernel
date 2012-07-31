@@ -31,8 +31,9 @@ cp .config-roqu .config
 ./mka
 cd ..
 ./anykernelmaker $BASEDIR $1ics-roqu-vsyncOff-$DATUM $2
-cd $BASEDIR
 
+echo `pwd`
+read
 echo 
 cd $2
 git status
@@ -47,4 +48,3 @@ cd $BASEDIR
 
 #restore original config
 mv .config_save .config
-
