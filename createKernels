@@ -22,7 +22,7 @@ echo ta_off
 cp .config-ta .config
 ./mka
 cd ..
-./anykernelmaker $BASEDIR $1-ta-vsyncOff-$DATUM $2
+./anykernelmaker $BASEDIR $1ics-ta-vsyncOff-$DATUM $2
 cd $BASEDIR
 
 echo
@@ -30,7 +30,7 @@ echo roqu_off
 cp .config-roqu .config
 ./mka
 cd ..
-./anykernelmaker $BASEDIR $1-roqu-vsyncOff-$DATUM $2
+./anykernelmaker $BASEDIR $1ics-roqu-vsyncOff-$DATUM $2
 cd $BASEDIR
 
 echo 
