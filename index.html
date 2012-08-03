@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>candied kernel by DJNoXD</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>candied kernel</h1>
+        <p>based on cyanogen 2.6.35.10 kernel for LGE msm7x27(T) devices</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/DJNoXD/candied-kernel" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/DJNoXD/candied-kernel/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/DJNoXD/candied-kernel/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1>Hello and welcome</h1>
+
+<h2>Some information's about this kernel project</h2>
+
+<p>This kernel is created for the LGE p500 by using the official cyanogen kernel for LGE msm7x27(T) as base.
+Since I started my work there are lots of modifications implemented, for example:</p>
+
+<ul>
+<li>kernel source is updated (2.6.35.10 -&gt; 2.6.35.13 -&gt; 2.6.35.14)</li>
+<li>back ported driver from later kernel sources (2.6.36 and 3.0)</li>
+<li>improved battery life</li>
+<li>changes to improve stability and performance</li>
+<li>cifs, tun, advanced routing, fuse are compiled into kernel</li>
+</ul><h2>Warning</h2>
+
+<p>I'm not responsible if you brick your device by heavy OC, flashing ...
+Using using very high frequencies (&gt; 729Mhz) is dangerous and can melt your phone main board!</p>
+
+<h2>Before flashing this kernel</h2>
+
+<p>Kernel source based on 2.6.35 are for use with gingerbread (2.3) and ics/jellybean (use special <strong>ics</strong> version).
+This means older android versions (2.2 and older) are not compatible.
+If you have problems with other roms than cyanogen (or cyanogen based), this kernel is maybe not 100% compatible with your rom.</p>
+
+<h2>Downloads</h2>
+
+<ul>
+<li>
+<a href="http://forum.xda-developers.com/showpost.php?p=24560941&amp;postcount=1">xda-developers</a> (only latest / selected)</li>
+<li>
+<a href="http://github.com/DJNoXD/candied-kernel-releases">github</a> (only latest / testing)</li>
+<li>
+<a href="https://docs.google.com/open?id=0B8b2O5uDZNrbMkRFR0hiNno2NzA">googledrive</a> (all)</li>
+</ul><h1>FAQs:</h1>
+
+<h2>Which kernel version should I choose?</h2>
+
+<h3>vsyncOff</h3>
+
+<p>If you always want the highest possible frame rate, you should take this one.
+(Disadvantage tearing)</p>
+
+<h3>vsync</h3>
+
+<p>No tearing, constant frame rate (60fps)
+If the frame rate (60fps) isn't possible, the fps is divided by two (30fps -&gt; 15fps and so on)</p>
+
+<h3>caveman or default touchscreen driver</h3>
+
+<p>You have to try which one you like.
+If you don't want to try take the default version.</p>
+
+<h2>When will you release a new version?</h2>
+
+<p>New versions are released if changes are implemented, tested and if I think they are good enough to be released.
+Successful implemented changes of an unreleased version can be found an in the changelog.</p>
+
+<h2>Will this kernel work with rom xyz?</h2>
+
+<p>This kernel is based on cyanogen kernel. If the ROM you use is cyanogen 7 or based on it there should be no problems.
+I guess it should work with every gb rom, but there is no guarantee.</p>
+
+<p>If you use a gingerbread ROM which is not based on cyanogen, feel free to test yourself (Create a backup, flash kernel and test it) and share your result with us. </p>
+
+<h2>How do I install the kernel?</h2>
+
+<ul>
+<li>Reboot to Recovery</li>
+<li>Choose: install zip from sdcard -&gt; choose zip from sdcard</li>
+<li>Select the kernel zip file</li>
+<li>wipe cache and dalvik cache (not a must but I recommend)</li>
+<li>Reboot (if kernel is successful installed)</li>
+</ul><h2>Why is advanced routing included?</h2>
+
+<p>Some VPN apps need advanced routing features to work completely.</p>
+
+<h2>Could you include ...?</h2>
+
+<p>Tell me what you like to see and if possible the sources.
+I will take a look at and decide if it can be included. (and if I want to)</p>
+
+<h2>I found an error. / I have a problem. What can I do?</h2>
+
+<p>Post your problem at <a href="http://forum.xda-developers.com/showthread.php?t=1587209">xda-developers</a>.
+If you are using my kernels on other ROMs than cyanogen or with older android versions, please keep in mind that your ROM is maybe incompatible with this kernel.</p>
+
+<h2>Example battery usage of my phone</h2>
+
+<p>The hard drops happen while using date (mostly with wlan) or running some benchmark.
+<img src="http://img.tapatalk.com/02ce0008-c977-1fc7.jpg" alt="battery consumption"></p>
+
+<h1>explanation of the abbreviations</h1>
+
+<ul>
+<li>vsync = vsync enabled</li>
+<li>vsyncOff = vsync disabled</li>
+<li>default = default touchsreen driver</li>
+<li>cv = caveman's touchsreen driver</li>
+<li>ta = thachtunganh's touchsreen driver</li>
+</ul><h1>Changelogs</h1>
+
+<h2>v2.x</h2>
+
+<ul>
+<li>ICS version Fix: USB Mass Storage for ICS <a href="https://github.com/androidmeda" class="user-mention">@androidmeda</a> </li>
+<li>Fix proximity sensor <a href="https://github.com/androidmeda" class="user-mention">@androidmeda</a>
+</li>
+<li>bcm4325: Force powersave mode</li>
+<li>bcm4325: disable wakeup irq when device sleeps</li>
+<li>disabled: IR</li>
+<li><em><strong>changes from 2.5.4 above</strong></em></li>
+<li>add: sfb (Stochastic Fair Blue)</li>
+<li>optimize some build flags</li>
+<li><em><strong>changes from 2.5.3 above</strong></em></li>
+<li>fix: white noise</li>
+<li>merge latest cm kernel sources</li>
+<li><em><strong>changes from 2.5.2 above</strong></em></li>
+<li>Modules: now included in kernel (no longer .ko modules) (decrease kernel file size)</li>
+<li>sched: Fix struct autogroup memory leak</li>
+<li>sched_fair: Remove cpu from nohz idle set if not active</li>
+<li>sched_autogroup: enabled</li>
+<li>sched_autogroup: added</li>
+<li>enabled: fuse (Filesystem in Userspace)</li>
+<li>governor: intellidemand added</li>
+<li>compiler code optimisation set to -O3 (makes kernel a little bit faster)</li>
+<li>vsyncOn compile switch fixed</li>
+<li><em><strong>changes from 2.5.1 above</strong></em></li>
+<li>Some things I maybe forgot</li>
+<li>TS driver from <a href="https://github.com/roqu3" class="user-mention">@roqu3</a> included</li>
+<li>Fix null reference which causes rebooting when AP/WIFI mode changed <a href="https://github.com/androidmeda" class="user-mention">@androidmeda</a>
+</li>
+<li>updated vidc/camera headers for compatibility</li>
+<li>net: Reorder incoming packets in PPPoLAC and PPPoPNS</li>
+<li>msm: camera: Free buffers from frame queue at open</li>
+<li>Update: SIO 0.2</li>
+<li>msm: vidc: Remove vcd restriction of duplicate input buffer queue</li>
+<li>Little performance improvement for slub memory allocator <a href="https://github.com/franciscofranco" class="user-mention">@franciscofranco</a>
+</li>
+<li>CONFIG_STACKTRACE disabled</li>
+<li>Use compiler code optimisation -&gt; faster (CONFIG_CC_OPTIMIZE_FOR_SIZE has to be disabled)</li>
+<li>Add and enable frontswap</li>
+<li>Update: Memory Manager (mm) from Code Aurora Forum kernel (ics_chocolate branch)</li>
+<li>Update: MDP header to latest version</li>
+<li>Update: msm_fb : Add support for Yamato format (our adreno200 gpu)</li>
+<li>Update: KGSL drivers</li>
+<li>Update: genlock from msm-3.0 </li>
+<li>Update: kernel source 2.6.35.13 &gt; 2.6.35.14</li>
+<li>Revert: merge latest cm kernel sources</li>
+<li><em><strong>changes from 2.5 above</strong></em></li>
+<li>merge latest cm kernel sources</li>
+<li>USB write performance: f_mass_storage: Disable write cache support</li>
+<li>Recent LCD Patch</li>
+<li><em><strong>changes from 2.4.2 above</strong></em></li>
+<li>bluesleep: Fix wakeup</li>
+<li>tun and cifs build build as modules </li>
+<li><em><strong>changes from 2.4.1 above</strong></em></li>
+<li>bluesleep: Disable the forceful usage of H4_LPM</li>
+<li>disabled: file system cache</li>
+<li>debuging completely disabled</li>
+<li>giving the kernel a name :-)</li>
+<li>touchscreen driver: using defaults -&gt; no changes</li>
+<li>governor added: minmax</li>
+<li>Higher OC values enabled</li>
+<li><em><strong>changes from 2.4 above</strong></em></li>
+<li>Enabled SCHED_DEBUG for better control of CPU scheduler</li>
+<li>CFQ Group Scheduling support and hierarchical scheduling support in BFQ enabled</li>
+<li>max_axi_khz set to 422400</li>
+<li>vfs_cache_pressure = 100</li>
+<li>cfs task (block) schedular enabled</li>
+<li>noop scheduler enabled</li>
+<li>tried something to about "white noise if display is enabled"</li>
+<li>some more debugging disabled</li>
+<li><em><strong>changes from 2.3 above</strong></em></li>
+<li>Advanced Routing enabled</li>
+<li>tun and cifs build into kernel (no longer provided as module)</li>
+<li><em><strong>changes from 2.2.2 above</strong></em></li>
+<li>new default governor interactiveX</li>
+<li>lionheart governor removed (use conservative instead)</li>
+<li>max_axi_khz = 200000</li>
+<li>Revert "Wifi set to FAST (roqu3)"</li>
+<li>-&gt; because phone gets hot when using Wifi Teathering</li>
+<li>Revert "gpu: msm: Update GPU drivers from 3.0 kernel"</li>
+<li>-&gt; old version feels smoother</li>
+<li>ADD: new workqueue code from 2.6.36.1 (umaro) (+ code patched e.g. smartassv2)</li>
+<li>vfs_cache_pressure = 25 (more free ram)</li>
+<li>init: calibrate: Backported from 3.0 kernel.</li>
+<li>using high priority (non-delayed) workqueue for TS driver (better response)</li>
+<li>-&gt; this maybe solves TS problem for some people (please test)</li>
+<li>CPUIDLE code from 3.0rc6 kernel (by Imoseyon)</li>
+<li>more FS tweaks (umaro)</li>
+<li>power-supply: Limit the duration of psy_changed wakelocks</li>
+<li>msm: cpufreq: Create cpufreq workqueue for freq changes</li>
+<li>ADD + enabled: dm-cache</li>
+<li>back to franoc's conservative OC</li>
+<li>more unused drivers disabled</li>
+<li><em><strong>changes from 2.2 above</strong></em></li>
+<li>reverted: try to fix "white noise"</li>
+<li><em><strong>changes from 2.1.1 above</strong></em></li>
+<li>try to fix "white noise" (still there, but only very short time)</li>
+<li>some patches about speed</li>
+<li>more debugs disabled</li>
+<li>fix cpu load 100%</li>
+<li>backported binder from 3.0 kernel (lupohirp)</li>
+<li>BUS freq OC</li>
+<li>GPU freq OC</li>
+<li>GPU drivers from 3.0 kernel</li>
+<li>genlock enabled</li>
+<li>axi OC</li>
+<li>bcm4325: MAX_STATIC_PKT_NUM patch (HepHappy)</li>
+<li>LZMA compression (best compression -&gt; testing about speed)</li>
+<li>ARM: decompressor: use better output sections</li>
+<li><em><strong>changes from 2.1 above</strong></em></li>
+<li>default governor set to lionheart</li>
+<li>lulzactive governor removed (does not work)</li>
+<li>clean up: governors and schedulers</li>
+<li>axis inverse workaround (waleedq)</li>
+<li>VM tweaks</li>
+<li>Claim more free ram (lupohirp)</li>
+<li>grants system server access to oom_adj for applications (lupohirp)</li>
+<li>remount with noatime and nodiratime (cresqo)</li>
+<li>cgroup: fix cpuset permission check (thachtunganh)</li>
+<li>msm: cpufreq: Do not call a cpu transition if selecting the same speed (LorDClockaN)</li>
+<li>cgroup: speed up access to cgroupfs mounted entries in /proc/mounts (franciscofranco)</li>
+<li>Fix memory leaks from the wifi drivers (franciscofranco)</li>
+<li>staging: android: lowmemorykiller: minfree values added</li>
+<li>msm cpufreq Improve initial frequency selection - CodeAurora</li>
+<li>fs: simple fsync race fix ()</li>
+<li>ashmem: fix deadlock when system is low on memory</li>
+<li>Wifi set to FAST (roqu3)</li>
+<li>Set correct divx codec type (francisofranco)</li>
+<li>Fast Sleep, wake lock timer change. (wistilt2)</li>
+<li>lionheart (implementation from roqu3) done to 3.0.8 conservative governor</li>
+<li>file system cache enabled</li>
+<li>Lower radio/event log for more ram (wingrime)</li>
+<li>Increase readahead to some more reasonable values (franciscofranco)</li>
+<li>New battery driver courtesy of thachtunganh</li>
+<li>net: wireless: bcm4325: Convert kmalloc() + bzero() to kzalloc() (franciscofranco)</li>
+<li>Fix camera flicker (Turducken)</li>
+<li>Set axi freq to max possible (clk_get_max_axi_khz())</li>
+<li>CPUFREQ_ondemand code from 3.0.8 kernel</li>
+<li>CPUFREQ code from 3.0.8 kernel</li>
+<li>Using OC settings from franciscofranco (higher OC?)</li>
+<li>Update: Linux upstream 2.6.35.10 &gt; 2.6.35.13</li>
+<li>vm_swappiness = 1 (performance is a little bit better than 0)</li>
+<li>Erase memory pages as soon as they are freed to prevent new processes getting old information (franciscofranco)</li>
+<li>writes_starved = 1</li>
+<li>added tun.ko</li>
+<li>added cifs.ko</li>
+<li>lzo kernel compression (larger file, but faster boot time)</li>
+<li>debugging disabled for performace and smaller kernel</li>
+<li>unecessary SCSI drivers removed</li>
+<li><em><strong>all changes from v2 above (started again from clean sources)</strong></em></li>
+</ul><h2>v1.x</h2>
+
+<ul>
+<li>block: limit default readahead size for small devices (eugene373)</li>
+<li>dm-cache: block level disk cache target for device mapper</li>
+<li>Updated the built-in wakelock (ACA)</li>
+<li>backport from 2.5.37: sched: Try not to migrate higher priority RT tasks</li>
+<li>backport from 2.5.37: cfq: improve fsync performance for small files</li>
+<li>backport from 2.6.37: cfq-iosched: Implement tunable group_idle</li>
+<li>backport from 2.6.36: OOM rewrite</li>
+<li>msm: cpufreq: Do not call a cpu transition if selecting the same speed. (LorDClockaN)</li>
+<li>interactive governor removed</li>
+<li>conservative governor: using tweaks from morfic</li>
+<li>added "Lionheart" governor implementation from roqu3 (Info: Lionheart goes well with deadline i/o scheduler)</li>
+<li>added "lulzactive" governor (based on Interactive &amp; Smartass governors)</li>
+<li>added tun.ko</li>
+<li>added cifs.ko</li>
+<li>some syntax correction</li>
+<li>lzo kernel compression (larger file, but faster boot time)</li>
+<li><em><strong>changes from v1.4 above</strong></em></li>
+<li>vsync not off problem fixed</li>
+<li><em><strong>changes from v1.3.1 above</strong></em></li>
+<li>included touchscreendriver from DerCaveman</li>
+<li>mcs6000_ts: fix cpu load 100% (mik_os)</li>
+<li>vSync disabled (added compile switch)</li>
+<li>some backport from 3.3 kernel (if it works)</li>
+<li>Lower radio/event log for more ram (wingrime)</li>
+<li>Fast Sleep, wake lock timer change. (wistilt2)</li>
+<li>Set correct divx codec type (francisofranco)</li>
+<li>Wifi set to FAST (roqu3)</li>
+<li>ashmem: fix deadlock when system is low on memory</li>
+<li>fs: simple fsync race fix</li>
+<li>msm cpufreq Improve initial frequency selection * CodeAurora</li>
+<li>staging: android: lowmemorykiller: additional minfree values added</li>
+<li>faster writeback</li>
+<li>cgroup: speed up access to cgroupfs mounted entries in /proc/mounts (…</li>
+<li>Fix memory leaks from the wifi drivers (franciscofranco)</li>
+<li>Increase readahead to some more reasonable values (franciscofranco)</li>
+<li>some code optimisations</li>
+<li><em><strong>changes from v1.3 above</strong></em></li>
+<li>fixed: SIO IO-scheduler enabled again and set as default</li>
+<li>undervolted all dynamic frequencies</li>
+<li><em><strong>changes from v1.2 above</strong></em></li>
+<li>smartass2 governor added</li>
+<li><em><strong>changes from v1.1 above</strong></em></li>
+<li>debugging disabled for performace and smaller kernel</li>
+<li>IO-scheduler
+
+<ul>
+<li>Deadline enable and modified (writes_starved = 1)</li>
+<li>SIO added (set as default)</li>
+<li>V/R added</li>
+</ul>
+</li>
+<li>interactivex governor added and set as default</li>
+<li>higher o/c frequencies enabled (be carefull)</li>
+<li>min frequency set to 480MHz</li>
+<li>vm_swappines = 0</li>
+<li>Reduce vfs_cache from 100 to 50</li>
+<li>fsync disabled (franciscofranco)</li>
+<li>Erase memory pages as soon as they are freed to prevent new processes getting old information (franciscofranco)</li>
+<li>unecessary SCSI drivers removed</li>
+<li><em><strong>initial version (v1)</strong></em></li>
+</ul>
+      </section>
+      <footer>
+        <p>Project maintained by <a href="https://github.com/DJNoXD">DJNoXD</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
+    
+  </body>
+</html>
